@@ -38,7 +38,7 @@ class TestAcess(object):
 
     @pytest.mark.parametrize("telegram_id, access_granted, exception_expected", _test_data)
     def test_remove_access(self, telegram_id, access_granted, exception_expected):
-        # If an exception was expected the ID wasn't added
+        # If an exception was expected the duplicate ID wasn't added. However, the original ID was added
         if exception_expected:
             pass
         elif not access_granted:
