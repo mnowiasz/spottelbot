@@ -4,8 +4,8 @@
 class Config(object):
     """ The global config object """
     botname = "MyBot"
-    __access_set = set()
-    __bookmark_set = {}
+    __access = set()
+    __bookmarks = {}
 
     def has_access(self, telegram_id: int) -> bool:
         """
@@ -16,7 +16,7 @@ class Config(object):
 
         Checks if the telgram ID is allowed to talk to the bot
         """
-        return telegram_id in self.__access_set
+        return telegram_id in self.__access
 
     def add_access(self, telegram_id: int):
         """
@@ -29,7 +29,7 @@ class Config(object):
         if self.has_access(telegram_id):
             raise KeyError(telegram_id)
 
-        self.__access_set.add(telegram_id)
+        self.__access.add(telegram_id)
 
     def remove_access(self, telegram_id: int):
         """
@@ -40,7 +40,7 @@ class Config(object):
         Removes the entry from the list of allowed user ids. Raises a KeyError if the ID is not present
         """
 
-        self.__access_set.remove(telegram_id)
+        self.__access.remove(telegram_id)
 
     def set_bookmark(self, bookmark_name: str, title_id: str, playlist_id: str = None):
         """
@@ -54,7 +54,7 @@ class Config(object):
 
         Sets a bookmark. If already prsenet, the bookmark will be overwritten
         """
-        self.__bookmark_set[bookmark_name] = (title_id, playlist_id)
+        self.__bookmarks[bookmark_name] = (title_id, playlist_id)
 
     def get_bookmark(self, bookmark_name: str) -> (str, str):
         """
@@ -66,7 +66,7 @@ class Config(object):
 
         Gets a bookmark. If the name of the bookmark doesn't exist a KeyError will be raised
         """
-        return self.__bookmark_set[bookmark_name]
+        return self.__bookmarks[bookmark_name]
 
     def clear_bookmark(self, bookmark_name: str):
         """
@@ -77,4 +77,4 @@ class Config(object):
         Clears the bookmark. If the bookmark doesn't exist a KeyError will be raised
         """
 
-        del self.__bookmark_set[bookmark_name]
+        del self.__bookmarks[bookmark_name]

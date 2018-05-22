@@ -1,5 +1,7 @@
-import botuser
 import telegram
+
+import botuser
+
 
 def test_whoami():
     my_id:telegram.User = botuser.whoami()
