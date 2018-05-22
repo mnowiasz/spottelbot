@@ -48,3 +48,4 @@ class TestAcess(object):
         else:
             self._test_config.remove_access(telegram_id)
             assert not self._test_config.has_access(telegram_id)
+

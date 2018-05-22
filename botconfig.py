@@ -1,11 +1,16 @@
 """ The global config for the bot - users allowed to communicate, spotify token, ands so on"""
 
+bookmark_current = "Current"
+
 
 class Config(object):
     """ The global config object """
     botname = "MyBot"
-    __access = set()
-    __bookmarks = {}
+
+    def __init__(self):
+        self.__access = set()
+        self.__bookmarks = {}
+        self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
 
     def has_access(self, telegram_id: int) -> bool:
         """
@@ -42,6 +47,21 @@ class Config(object):
 
         self.__access.remove(telegram_id)
 
+    def _sanitize_bookmark(self, input: str) -> str:
+        """
+
+        :param input: The string to sanitize
+        :type input: str
+        :return: The sanitized string
+        :rtype: str
+
+        Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores)
+        """
+
+        return input.strip().translate(self._translation_table)
+
+
+
     def set_bookmark(self, bookmark_name: str, title_id: str, playlist_id: str = None):
         """
 
@@ -54,7 +74,7 @@ class Config(object):
 
         Sets a bookmark. If already prsenet, the bookmark will be overwritten
         """
-        self.__bookmarks[bookmark_name] = (title_id, playlist_id)
+        self.__bookmarks[self._sanitize_bookmark(bookmark_name)] = (title_id, playlist_id)
 
     def get_bookmark(self, bookmark_name: str) -> (str, str):
         """
@@ -66,7 +86,7 @@ class Config(object):
 
         Gets a bookmark. If the name of the bookmark doesn't exist a KeyError will be raised
         """
-        return self.__bookmarks[bookmark_name]
+        return self.__bookmarks[self._sanitize_bookmark(bookmark_name)]
 
     def clear_bookmark(self, bookmark_name: str):
         """
@@ -77,4 +97,20 @@ class Config(object):
         Clears the bookmark. If the bookmark doesn't exist a KeyError will be raised
         """
 
-        del self.__bookmarks[bookmark_name]
+        del self.__bookmarks[self._sanitize_bookmark(bookmark_name)]
+
+    # Make sure that "current" is first in list. After that, the list can be sorted
+    def _bookmark_compare(self, key):
+        if key == bookmark_current:
+            return " "
+        else:
+            return key
+
+    def get_bookmarks(self) -> list:
+        """
+
+        :return The sorted list of bookmarks
+        :rtype list
+        Returns the name of the bookmarks in a sorteds list, with "current" as the first entry
+        """
+        return sorted(self.__bookmarks.keys(), key=self._bookmark_compare)
