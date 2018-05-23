@@ -4,7 +4,7 @@ bookmark_current = "Current"
 
 
 class BotController(object):
-    """ The global config object """
+
     botname = "MyBot"
 
     def __init__(self):
@@ -12,6 +12,16 @@ class BotController(object):
         self.__bookmarks = {}
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
 
+    def load_config(self, filename: str):
+        """
+
+        :param filename: Filename of the configfile
+        :type filename: str
+        :return:
+        :rtype:
+
+        Loads/reload the config stored in the file. Throws the usual exceptions
+        """
     def has_access(self, telegram_id: int) -> bool:
         """
         :param telegram_id: The telegram ID
