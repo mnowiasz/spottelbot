@@ -1,10 +1,10 @@
 import pytest
 
-import botconfig
+import botcontroller
 
 
 def test_botname():
-    test_config = botconfig.Config()
+    test_config = botcontroller.BotController()
     assert test_config.botname == "MyBot"
 
 
@@ -21,7 +21,7 @@ class TestAcess(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botconfig.Config()
+        cls._test_config = botcontroller.BotController()
         for item in cls._test_data:
             telegram_id, access_granted, exception_expected = item
             if access_granted:

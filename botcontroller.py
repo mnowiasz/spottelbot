@@ -1,9 +1,9 @@
-""" The global config for the bot - users allowed to communicate, spotify token, ands so on"""
+""" The Bot controller - access rights, bookmarks, and so on """
 
 bookmark_current = "Current"
 
 
-class Config(object):
+class BotController(object):
     """ The global config object """
     botname = "MyBot"
 

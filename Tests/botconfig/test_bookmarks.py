@@ -1,6 +1,6 @@
 import pytest
 
-import botconfig
+import botcontroller
 
 
 # Add and remove bookmarks
@@ -15,7 +15,7 @@ class TestBookmarksAddRemove(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botconfig.Config()
+        cls._test_config = botcontroller.BotController()
         for entry in cls._test_data:
             name, title_id, playlist_id = entry
             cls._test_config.set_bookmark(name, title_id, playlist_id)
@@ -39,7 +39,7 @@ class TestBookmarkMisc(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botconfig.Config()
+        cls._test_config = botcontroller.BotController()
 
     # Test if a bookmark really gets overwritten
     def test_overwrite_bookmark(self):
@@ -83,7 +83,7 @@ class TestBookmarksSanitzied(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botconfig.Config()
+        cls._test_config = botcontroller.BotController()
         for entry in cls._test_data:
             name = entry[0]
             cls._test_config.set_bookmark(name, name, cls._test_playlist)
@@ -110,13 +110,13 @@ class TestBookmarksSanitzied(object):
 # Test if the bookmarklist is sorted
 class TestBookmarkSorted(object):
     _test_data = (
-        ("Foxtrot", "Alpha", "Charlie", "Echo", "Delta", "Bravo", botconfig.bookmark_current),
-        [botconfig.bookmark_current, "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
+        ("Foxtrot", "Alpha", "Charlie", "Echo", "Delta", "Bravo", botcontroller.bookmark_current),
+        [botcontroller.bookmark_current, "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
     )
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botconfig.Config()
+        cls._test_config = botcontroller.BotController()
         bookmarks = cls._test_data[0]
         for bookmark in bookmarks:
             cls._test_config.set_bookmark(bookmark, None, None)  # Payload is unimportant
