@@ -19,9 +19,22 @@ def test_loadconfig():
     _controller.load_config(_config_file_valid)
 
 
+@pytest.mark.parametrize("filename", ("missingsection1.config", "missingsection2.config"))
+def test_loadconfig_missingsections(filename):
+    config_file_missingsection = os.path.join(_config_path, filename)
+
+    with pytest.raises(botexceptions.MissingSection):
+        _controller.load_config(config_file_missingsection)
+
+
 def test_telegram_token():
     _controller.load_config(_config_file_valid)
     assert _controller._telegram_token == "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+
+
+def test_spotify_username():
+    _controller.load_config(_config_file_valid)
+    assert _controller._spotify_username == "SpotifyUser"
 
 
 class TestAccessConfig():
@@ -41,11 +54,18 @@ class TestAccessConfig():
         assert self._controller.has_access(telegram_id) == access_granted
 
 
-def test_loadconfig_missingusers():
-    config_file_nousers = os.path.join(_config_path, "missingusers.config")
-    with pytest.raises(KeyError) as keyerror:
-        _controller.load_config(config_file_nousers)
-    assert _controller._telegram_entry_users == keyerror.value.args[0]
+@pytest.mark.parametrize("filename", ("missingusers1.config", "missingusers2.config"))
+def test_loadconfig_missingusers(filename):
+    config_file_missingusers = os.path.join(_config_path, filename)
+    with pytest.raises(botexceptions.MissingUsers):
+        _controller.load_config(config_file_missingusers)
+
+
+def test_duplicate_users():
+    config_file_duplicate = os.path.join(_config_path, "duplicateusers.config")
+    with pytest.raises(botexceptions.DuplicateUsers) as duplicate:
+        _controller.load_config(config_file_duplicate)
+    assert duplicate.value.duplicate_id == 12354
 
 
 def test_loadconfig_badusers():
@@ -58,15 +78,12 @@ def test_loadconfig_badusers():
 @pytest.mark.parametrize("filename", ("missingtoken1.config", "missingtoken2.config"))
 def test_loadconfig_missingtoken(filename):
     config_file_missingtoken = os.path.join(_config_path, filename)
-
     with pytest.raises(botexceptions.MissingTelegramToken):
         _controller.load_config(config_file_missingtoken)
 
 
-# TODO: Missingsection2
-@pytest.mark.parametrize("filename", ("missingsection1.config", "missingsection1.config"))
-def test_loadconfig_missingsections(filename):
-    config_file_missingsection = os.path.join(_config_path, filename)
-
-    with pytest.raises(botexceptions.MissingSection):
-        _controller.load_config(config_file_missingsection)
+@pytest.mark.parametrize("filename", ("missingusername1.config", "missingusername2.config"))
+def test_loadconfig_missingusername(filename):
+    config_file_missingusername = os.path.join(_config_path, filename)
+    with pytest.raises(botexceptions.MissingSpotifyUsername):
+        _controller.load_config(config_file_missingusername)
