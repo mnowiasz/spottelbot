@@ -21,21 +21,21 @@ class TestAcess(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_config = botcontroller.BotController()
+        cls._test_controller = botcontroller.BotController()
         for item in cls._test_data:
             telegram_id, access_granted, exception_expected = item
             if access_granted:
                 if exception_expected:
                     with pytest.raises(KeyError):
-                        cls._test_config.add_access(telegram_id)
+                        cls._test_controller.add_access(telegram_id)
                 else:
-                    cls._test_config.add_access(telegram_id)
+                    cls._test_controller.add_access(telegram_id)
 
     @pytest.mark.parametrize("telegram_id, access_granted, exception_expected", _test_data)
     def test_has_access(self, telegram_id, access_granted, exception_expected):
         if exception_expected:
             pass
-        assert self._test_config.has_access(telegram_id) == access_granted
+        assert self._test_controller.has_access(telegram_id) == access_granted
 
     @pytest.mark.parametrize("telegram_id, access_granted, exception_expected", _test_data)
     def test_remove_access(self, telegram_id, access_granted, exception_expected):
@@ -44,7 +44,7 @@ class TestAcess(object):
             pass
         elif not access_granted:
             with  pytest.raises(KeyError):
-                self._test_config.remove_access(telegram_id)
+                self._test_controller.remove_access(telegram_id)
         else:
-            self._test_config.remove_access(telegram_id)
-            assert not self._test_config.has_access(telegram_id)
+            self._test_controller.remove_access(telegram_id)
+            assert not self._test_controller.has_access(telegram_id)

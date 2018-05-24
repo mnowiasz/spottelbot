@@ -1,4 +1,5 @@
 """ The Bot controller - access rights, bookmarks, and so on """
+import configparser
 
 bookmark_current = "Current"
 
@@ -22,6 +23,20 @@ class BotController(object):
 
         Loads/reload the config stored in the file. Throws the usual exceptions
         """
+
+        self._config = configparser.ConfigParser()
+        self._config.read_file(open(filename))
+        self._telegram_token = self._config["telegram"]["token"]
+        self._clear_access()
+        try:
+            users = self._config["telegram"]["users"]
+            for telegram_id in users.split(","):
+                self.add_access(int(telegram_id))
+        except KeyError:
+            # TODO: Warning ("No users set"). Perfectly OK when the bot is run the first time
+            raise
+
+
     def has_access(self, telegram_id: int) -> bool:
         """
         :param telegram_id: The telegram ID
@@ -56,6 +71,13 @@ class BotController(object):
         """
 
         self.__access.remove(telegram_id)
+
+    def _clear_access(self):
+        """
+
+        Empties the access list/dictionary. Used in (re)loading the config
+        """
+        self.__access = set()
 
     def _sanitize_bookmark(self, input: str) -> str:
         """
