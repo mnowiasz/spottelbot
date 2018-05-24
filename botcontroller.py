@@ -1,11 +1,15 @@
 """ The Bot controller - access rights, bookmarks, and so on """
 import configparser
 
+import botexceptions
+
 bookmark_current = "Current"
 
 
 class BotController(object):
-
+    _telegram_section = "telegram"
+    _telegram_entry_token = "token"
+    _telegram_entry_users = "users"
     botname = "MyBot"
 
     def __init__(self):
@@ -26,16 +30,25 @@ class BotController(object):
 
         self._config = configparser.ConfigParser()
         self._config.read_file(open(filename))
-        self._telegram_token = self._config["telegram"]["token"]
-        self._clear_access()
         try:
-            users = self._config["telegram"]["users"]
-            for telegram_id in users.split(","):
-                self.add_access(int(telegram_id))
-        except KeyError:
-            # TODO: Warning ("No users set"). Perfectly OK when the bot is run the first time
-            raise
+            self._telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
+            if self._telegram_token == "":
+                raise botexceptions.MissingTelegramToken()
 
+            self._clear_access()
+            users = self._config[self._telegram_section][self._telegram_entry_users]
+            for telegram_id in users.split(","):
+                try:
+                    self.add_access(int(telegram_id))
+                except ValueError as v:
+                    raise botexceptions.InvalidUser(v, telegram_id.strip())
+        except KeyError as key_error:
+            if key_error.args[0] == self._telegram_entry_token:
+                raise botexceptions.MissingTelegramToken()
+            elif key_error.args[0] == self._telegram_section:
+                raise botexceptions.MissingSection
+            else:
+                raise
 
     def has_access(self, telegram_id: int) -> bool:
         """
