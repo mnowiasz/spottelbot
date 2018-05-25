@@ -47,10 +47,10 @@ class BotController(object):
                 self.add_access(int(telegram_id))
             # If a user isn't numeric, it's invalid
             except ValueError as v:
-                raise botexceptions.InvalidUser(v, telegram_id.strip())
+                raise botexceptions.InvalidUser(v, telegram_id.strip()) from v
             # A KeyError in add_access() can only mean that a user ID alread exist
-            except KeyError:
-                raise botexceptions.DuplicateUsers(int(telegram_id))
+            except KeyError as k:
+                raise botexceptions.DuplicateUsers(int(telegram_id)) from k
 
     def _load_spotify_config(self):
         """
@@ -81,7 +81,7 @@ class BotController(object):
                 playlist_id = splitted[1].strip()
             self.set_bookmark(bookmark_name, track_id, playlist_id)
 
-    def load_config_file(self, configfile):
+    def load_config(self, configfile):
         """
 
         :param configfile: The file to parse
@@ -106,18 +106,56 @@ class BotController(object):
         except KeyError as key_error:
             missing_key = key_error.args[0]
             if missing_key == self._telegram_section or missing_key == self._spotify_section:
-                raise botexceptions.MissingSection(missing_key)
+                raise botexceptions.MissingSection(missing_key) from key_error
             elif missing_key == self._telegram_entry_token:
-                raise botexceptions.MissingTelegramToken
+                raise botexceptions.MissingTelegramToken from key_error
             elif missing_key == self._telegram_entry_users:
-                raise botexceptions.MissingUsers
+                raise botexceptions.MissingUsers from key_error
             elif missing_key == self._spotify_entry_username:
-                raise botexceptions.MissingSpotifyUsername
+                raise botexceptions.MissingSpotifyUsername from key_error
             else:
                 # DuplicateSectionError, DuplicateOption...
                 raise
 
-    def write_config(self, configfile):
+    def _save_telegram(self):
+        """
+        Saves the telegram section
+        """
+
+        self._config.remove_section(self._telegram_section)
+        self._config.add_section(self._telegram_section)
+        self._config[self._telegram_section][self._telegram_entry_token] = self._telegram_token
+        if self.__access:
+            self._config[self._telegram_section][self._telegram_entry_users] = \
+                ",".join(str(telegram_id) for telegram_id in self.__access)
+
+    def _save_spotify(self):
+        """
+
+        Saves the spotify section
+        """
+
+        self._config.remove_section(self._spotify_section)
+        self._config.add_section(self._spotify_section)
+        self._config[self._spotify_section][self._spotify_entry_username] = self._spotify_username
+
+    def _save_bookmarks(self):
+        """
+
+        Saves the bookmark section
+        """
+
+        if self._config.has_section(self._bookmark_section):
+            self._config.remove_section(self._bookmark_section)
+            self._config.add_section(self._bookmark_section)
+            for bookmark in self.get_bookmarks():
+                track_id, playlist_id = self.get_bookmark(bookmark)
+                if playlist_id is None:
+                    self._config[self._bookmark_section][bookmark] = track_id
+                else:
+                    self._config[self._bookmark_section][bookmark] = track_id + "," + playlist_id
+
+    def save_config(self, configfile):
         """
 
         :param configfile: The file like object to write the config into
@@ -127,6 +165,10 @@ class BotController(object):
 
         Write the config into the specified configfile
         """
+
+        self._save_telegram()
+        self._save_spotify()
+        self._save_bookmarks()
         self._config.write(configfile)
 
     def has_access(self, telegram_id: int) -> bool:
@@ -184,26 +226,26 @@ class BotController(object):
 
         return input.strip().translate(self._translation_table)
 
-    def set_bookmark(self, bookmark_name: str, title_id: str, playlist_id: str = None):
+    def set_bookmark(self, bookmark_name: str, track_id: str, playlist_id: str = None):
         """
 
         :param bookmark_name: The name of the bookmark ("current", "foo", "bar"..)
         :type bookmark_name: str
-        :param title_id: Spotify's title ID - base62 coded
-        :type title_id: str
+        :param track_id: Spotify's track ID - base62 coded
+        :type track_id: str
         :param playlist_id: The (optional) playlist ID - base62 coded
         :type playlist_id: str
 
         Sets a bookmark. If already prsenet, the bookmark will be overwritten
         """
-        self.__bookmarks[self._sanitize_bookmark(bookmark_name)] = (title_id, playlist_id)
+        self.__bookmarks[self._sanitize_bookmark(bookmark_name)] = (track_id, playlist_id)
 
     def get_bookmark(self, bookmark_name: str) -> (str, str):
         """
 
         :param bookmark_name: The name of the bookmark ("current", "a")
         :type bookmark_name: str
-        :return: The ID of the title and (optionally) playlist
+        :return: The ID of the track and (optionally) playlist
         :rtype: (str, str)
 
         Gets a bookmark. If the name of the bookmark doesn't exist a KeyError will be raised
