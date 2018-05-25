@@ -20,6 +20,7 @@ class BotController(object):
     _telegram_entry_users = "users"
     _spotify_section = "spotify"
     _spotify_entry_username = "username"
+    _bookmark_section = "bookmarks"
 
     botname = "MyBot"
 
@@ -61,6 +62,16 @@ class BotController(object):
         if self._spotify_username == "":
             raise botexceptions.MissingSpotifyUsername()
 
+    def _load_bookmarks(self):
+        """
+
+        Loads the bookmarks
+        """
+
+        for bookmark_name, spotify_id in self._config[self._bookmark_section].items():
+            self.set_bookmark(bookmark_name, spotify_id)
+
+
     def load_config(self, filename: str):
         """
 
@@ -77,6 +88,8 @@ class BotController(object):
         try:
             self._load_telegram_config()
             self._load_spotify_config()
+            if self._bookmark_section in self._config:
+                self._load_bookmarks()
 
         # Transform generic exceptions into more specific ones which are more easily processed, resulting in more
         # readable code
@@ -92,7 +105,7 @@ class BotController(object):
             elif missing_key == self._spotify_entry_username:
                 raise botexceptions.MissingSpotifyUsername
             else:
-                # This should never happen (famous last words)
+                # DuplicateSectionError, DuplicateOption...
                 raise
 
     def has_access(self, telegram_id: int) -> bool:

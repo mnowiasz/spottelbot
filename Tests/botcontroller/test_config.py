@@ -1,3 +1,4 @@
+import configparser
 import os
 
 import pytest
@@ -37,7 +38,7 @@ def test_spotify_username():
     assert _controller._spotify_username == "SpotifyUser"
 
 
-class TestAccessConfig():
+class TestAccessConfig(object):
     _test_data = (
         (12354, True),
         (543431, True),
@@ -87,3 +88,24 @@ def test_loadconfig_missingusername(filename):
     config_file_missingusername = os.path.join(_config_path, filename)
     with pytest.raises(botexceptions.MissingSpotifyUsername):
         _controller.load_config(config_file_missingusername)
+
+
+class TestBookmarks(object):
+    @classmethod
+    def setup_class(cls):
+        cls._controller = botcontroller.BotController()
+        cls._controller.load_config(_config_file_valid)
+
+    @pytest.mark.parametrize("bookmark_name, spotify_id", (
+            ("current", "5aftzefdrefg"),
+            ("mybookmark", "zwdffee124455"),
+            ("alpha", "34q1341441414"),
+            ("bravo", "xadf45342424")))
+    def test_loadconfig_bookmarks(self, bookmark_name, spotify_id):
+        assert self._controller.get_bookmark(bookmark_name) == (spotify_id, None)
+
+
+def test_loadconfig_duplicatebookmarks():
+    config_file_duplicate = os.path.join(_config_path, "duplicatebookmarks.config")
+    with pytest.raises(configparser.DuplicateOptionError):
+        _controller.load_config(config_file_duplicate)
