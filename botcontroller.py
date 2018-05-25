@@ -81,11 +81,11 @@ class BotController(object):
                 playlist_id = splitted[1].strip()
             self.set_bookmark(bookmark_name, track_id, playlist_id)
 
-    def load_config(self, filename: str):
+    def load_config_file(self, configfile):
         """
 
-        :param filename: Filename of the configfile
-        :type filename: str
+        :param configfile: The file to parse
+        :type configfile: filelike object
         :return:
         :rtype:
 
@@ -93,7 +93,7 @@ class BotController(object):
         """
 
         self._config = configparser.ConfigParser()
-        self._config.read_file(open(filename))
+        self._config.read_file(configfile)
         try:
             self._load_telegram_config()
             self._load_spotify_config()

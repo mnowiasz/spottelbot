@@ -12,7 +12,7 @@ class TestConfigWrite(object):
         cls._config_file_valid = os.path.join(cls._config_path, "valid.config")
 
     def test_writeconfig(self):
-        self._controller.load_config(self._config_file_valid)
+        self._controller.load_config_file(open(self._config_file_valid))
         outfile = tempfile.TemporaryFile(mode="w")
         self._controller.write_config(outfile)
         outfile.close()
