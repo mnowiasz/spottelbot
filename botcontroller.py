@@ -6,16 +6,60 @@ import botexceptions
 bookmark_current = "Current"
 
 
+# Make sure that "current" is first in list. After that, the list can be sorted
+def _bookmark_compare(key):
+    if key == bookmark_current:
+        return " "
+    else:
+        return key
+
+
 class BotController(object):
     _telegram_section = "telegram"
     _telegram_entry_token = "token"
     _telegram_entry_users = "users"
+    _spotify_section = "spotify"
+    _spotify_entry_username = "username"
+
     botname = "MyBot"
 
     def __init__(self):
         self.__access = set()
         self.__bookmarks = {}
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
+
+    def _load_telegram_config(self):
+        """
+        Loads telegram's config items
+        """
+
+        self._telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
+        if self._telegram_token == "":
+            raise botexceptions.MissingTelegramToken()
+        self._clear_access()
+        users = self._config[self._telegram_section][self._telegram_entry_users]
+        if users == "":
+            raise botexceptions.MissingUsers
+
+        for telegram_id in users.split(","):
+            try:
+                self.add_access(int(telegram_id))
+            # If a user isn't numeric, it's invalid
+            except ValueError as v:
+                raise botexceptions.InvalidUser(v, telegram_id.strip())
+            # A KeyError in add_access() can only mean that a user ID alread exist
+            except KeyError:
+                raise botexceptions.DuplicateUsers(int(telegram_id))
+
+    def _load_spotify_config(self):
+        """
+
+        Loads spotify's config items
+        """
+
+        self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username.strip()]
+        if self._spotify_username == "":
+            raise botexceptions.MissingSpotifyUsername()
 
     def load_config(self, filename: str):
         """
@@ -31,23 +75,24 @@ class BotController(object):
         self._config = configparser.ConfigParser()
         self._config.read_file(open(filename))
         try:
-            self._telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
-            if self._telegram_token == "":
-                raise botexceptions.MissingTelegramToken()
+            self._load_telegram_config()
+            self._load_spotify_config()
 
-            self._clear_access()
-            users = self._config[self._telegram_section][self._telegram_entry_users]
-            for telegram_id in users.split(","):
-                try:
-                    self.add_access(int(telegram_id))
-                except ValueError as v:
-                    raise botexceptions.InvalidUser(v, telegram_id.strip())
+        # Transform generic exceptions into more specific ones which are more easily processed, resulting in more
+        # readable code
+
         except KeyError as key_error:
-            if key_error.args[0] == self._telegram_entry_token:
-                raise botexceptions.MissingTelegramToken()
-            elif key_error.args[0] == self._telegram_section:
-                raise botexceptions.MissingSection
+            missing_key = key_error.args[0]
+            if missing_key == self._telegram_section or missing_key == self._spotify_section:
+                raise botexceptions.MissingSection(missing_key)
+            elif missing_key == self._telegram_entry_token:
+                raise botexceptions.MissingTelegramToken
+            elif missing_key == self._telegram_entry_users:
+                raise botexceptions.MissingUsers
+            elif missing_key == self._spotify_entry_username:
+                raise botexceptions.MissingSpotifyUsername
             else:
+                # This should never happen (famous last words)
                 raise
 
     def has_access(self, telegram_id: int) -> bool:
@@ -57,7 +102,7 @@ class BotController(object):
         :return: if the telegram ID is allowed to query the bot
         :rtype: bool
 
-        Checks if the telgram ID is allowed to talk to the bot
+        Checks if the telegram ID is allowed to talk to the bot
         """
         return telegram_id in self.__access
 
@@ -105,8 +150,6 @@ class BotController(object):
 
         return input.strip().translate(self._translation_table)
 
-
-
     def set_bookmark(self, bookmark_name: str, title_id: str, playlist_id: str = None):
         """
 
@@ -144,13 +187,6 @@ class BotController(object):
 
         del self.__bookmarks[self._sanitize_bookmark(bookmark_name)]
 
-    # Make sure that "current" is first in list. After that, the list can be sorted
-    def _bookmark_compare(self, key):
-        if key == bookmark_current:
-            return " "
-        else:
-            return key
-
     def get_bookmarks(self) -> list:
         """
 
@@ -158,4 +194,4 @@ class BotController(object):
         :rtype list
         Returns the name of the bookmarks in a sorteds list, with "current" as the first entry
         """
-        return sorted(self.__bookmarks.keys(), key=self._bookmark_compare)
+        return sorted(self.__bookmarks.keys(), key=_bookmark_compare)
