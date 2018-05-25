@@ -58,7 +58,7 @@ class BotController(object):
         Loads spotify's config items
         """
 
-        self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username.strip()]
+        self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username]
         if self._spotify_username == "":
             raise botexceptions.MissingSpotifyUsername()
 
@@ -68,8 +68,17 @@ class BotController(object):
         Loads the bookmarks
         """
 
-        for bookmark_name, spotify_id in self._config[self._bookmark_section].items():
-            self.set_bookmark(bookmark_name, spotify_id)
+        self.clear_bookmarks()
+        for bookmark_name, entry in self._config[self._bookmark_section].items():
+            splitted = entry.split(",")
+            track_id = splitted[0].strip()
+            if len(splitted) > 2:
+                raise botexceptions.InvalidBookmark(bookmark_name)
+            elif len(splitted) == 1:
+                playlist_id = None
+            else:
+                playlist_id = splitted[1].strip()
+            self.set_bookmark(bookmark_name, track_id, playlist_id)
 
 
     def load_config(self, filename: str):
@@ -208,3 +217,14 @@ class BotController(object):
         Returns the name of the bookmarks in a sorteds list, with "current" as the first entry
         """
         return sorted(self.__bookmarks.keys(), key=_bookmark_compare)
+
+    def clear_bookmarks(self):
+        """
+
+        :return:
+        :rtype:
+
+        Empties the bookmark list, either by command or by reloading the config
+        """
+
+        self.__bookmarks = {}

@@ -23,8 +23,8 @@ class TestBookmarksAddRemove(object):
     @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", _test_data)
     def test_get_bookmark(self, bookmark_name, title_id, playlist_id):
         title, playlist = self._test_controller.get_bookmark(bookmark_name)
-        assert title == title_id
-        assert playlist == playlist_id
+        assert title_id == title
+        assert playlist_id == playlist
 
     # Clear all added bookmarks
     @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", _test_data)
@@ -49,14 +49,12 @@ class TestBookmarkMisc(object):
         self._test_controller.set_bookmark(bookmarkname, before[0], before[1])
         title, playlist = self._test_controller.get_bookmark(bookmarkname)
 
-        assert title == before[0]
-        assert playlist == before[1]
+        assert (before[0], before[1]) == (title, playlist)
 
         self._test_controller.set_bookmark(bookmarkname, after[0], after[1])
         title, playlist = self._test_controller.get_bookmark(bookmarkname)
 
-        assert title == after[0]
-        assert playlist == after[1]
+        assert (after[0], after[1]) == (title, playlist)
 
     # Access a nonexistent bookmark
     def test_nonexistent_bookmark(self):
@@ -91,14 +89,11 @@ class TestBookmarksSanitzied(object):
     @pytest.mark.parametrize("name, sanitized", _test_data)
     def test_get_sanitzed_names(self, name, sanitized):
         title, playlist = self._test_controller.get_bookmark(sanitized)
-
-        assert title == name
-        assert playlist == self._test_playlist
+        assert (name, self._test_playlist) == (name, playlist)
 
         title, playlist = self._test_controller.get_bookmark(name)
+        assert (name, self._test_playlist) == (name, playlist)
 
-        assert title == name
-        assert playlist == self._test_playlist
 
     @pytest.mark.parametrize("name, sanitized", _test_data)
     def test_clear_sanitzied_names(self, name, sanitized):
@@ -123,4 +118,4 @@ class TestBookmarkSorted(object):
 
     def test_get_bookmarks(self):
         sorted_list = self._test_controller.get_bookmarks()
-        assert sorted_list == self._test_data[1]
+        assert self._test_data[1] == sorted_list

@@ -32,3 +32,10 @@ class MissingSpotifyUsername(Exception):
 class MissingSection(Exception):
     def __init__(self, section=None):
         self.missing_section = section
+
+
+# Invalid Bookmarks (more than one or two entries)
+
+class InvalidBookmark(Exception):
+    def __init__(self, bookmark=None):
+        self.invalid_bookmark = bookmark

@@ -5,6 +5,4 @@ import botuser
 
 def test_whoami():
     my_id:telegram.User = botuser.whoami()
-    assert my_id.id == 1
-    assert my_id.is_bot == False
-    assert my_id.first_name == "Bot"
+    assert (1, False, "Bot") == (my_id.id, my_id.is_bot, my_id.first_name)

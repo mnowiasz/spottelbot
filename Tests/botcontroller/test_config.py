@@ -30,12 +30,12 @@ def test_loadconfig_missingsections(filename):
 
 def test_telegram_token():
     _controller.load_config(_config_file_valid)
-    assert _controller._telegram_token == "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+    assert "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw" == _controller._telegram_token
 
 
 def test_spotify_username():
     _controller.load_config(_config_file_valid)
-    assert _controller._spotify_username == "SpotifyUser"
+    assert "SpotifyUser" == _controller._spotify_username
 
 
 class TestAccessConfig(object):
@@ -52,7 +52,7 @@ class TestAccessConfig(object):
 
     @pytest.mark.parametrize("telegram_id, access_granted", _test_data)
     def test_has_access(self, telegram_id, access_granted):
-        assert self._controller.has_access(telegram_id) == access_granted
+        assert access_granted == self._controller.has_access(telegram_id)
 
 
 @pytest.mark.parametrize("filename", ("missingusers1.config", "missingusers2.config"))
@@ -66,7 +66,7 @@ def test_duplicate_users():
     config_file_duplicate = os.path.join(_config_path, "duplicateusers.config")
     with pytest.raises(botexceptions.DuplicateUsers) as duplicate:
         _controller.load_config(config_file_duplicate)
-    assert duplicate.value.duplicate_id == 12354
+    assert 12354 == duplicate.value.duplicate_id
 
 
 def test_loadconfig_badusers():
@@ -96,16 +96,23 @@ class TestBookmarks(object):
         cls._controller = botcontroller.BotController()
         cls._controller.load_config(_config_file_valid)
 
-    @pytest.mark.parametrize("bookmark_name, spotify_id", (
-            ("current", "5aftzefdrefg"),
-            ("mybookmark", "zwdffee124455"),
-            ("alpha", "34q1341441414"),
-            ("bravo", "xadf45342424")))
-    def test_loadconfig_bookmarks(self, bookmark_name, spotify_id):
-        assert self._controller.get_bookmark(bookmark_name) == (spotify_id, None)
+    @pytest.mark.parametrize("bookmark_name, track_id, playlist_id", (
+            ("current", "5aftzefdrefg", None),
+            ("mybookmark", "zwdffee124455", "14r434343434"),
+            ("alpha", "34q1341441414", "abcdef"),
+            ("bravo", "xadf45342424", None)))
+    def test_loadconfig_bookmarks(self, bookmark_name, track_id, playlist_id):
+        assert (track_id, playlist_id) == self._controller.get_bookmark(bookmark_name)
 
 
 def test_loadconfig_duplicatebookmarks():
     config_file_duplicate = os.path.join(_config_path, "duplicatebookmarks.config")
     with pytest.raises(configparser.DuplicateOptionError):
         _controller.load_config(config_file_duplicate)
+
+
+def test_loadconfig_invalidbookmarks():
+    config_file_invalid = os.path.join(_config_path, "invalidbookmarks.config")
+    with pytest.raises(botexceptions.InvalidBookmark) as invalid_bookmark:
+        _controller.load_config(config_file_invalid)
+    assert "current" == invalid_bookmark.value.invalid_bookmark

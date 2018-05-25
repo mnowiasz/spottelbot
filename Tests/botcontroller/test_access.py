@@ -5,7 +5,7 @@ import botcontroller
 
 def test_botname():
     test_config = botcontroller.BotController()
-    assert test_config.botname == "MyBot"
+    assert "MyBot" == test_config.botname
 
 
 class TestAcess(object):
@@ -35,7 +35,7 @@ class TestAcess(object):
     def test_has_access(self, telegram_id, access_granted, exception_expected):
         if exception_expected:
             pass
-        assert self._test_controller.has_access(telegram_id) == access_granted
+        assert access_granted == self._test_controller.has_access(telegram_id)
 
     @pytest.mark.parametrize("telegram_id, access_granted, exception_expected", _test_data)
     def test_remove_access(self, telegram_id, access_granted, exception_expected):
