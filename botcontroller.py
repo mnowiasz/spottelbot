@@ -72,14 +72,14 @@ class BotController(object):
         for bookmark_name, entry in self._config[self._bookmark_section].items():
             splitted = entry.split(",")
             track_id = splitted[0].strip()
-            if len(splitted) > 2:
+
+            if track_id == "" or len(splitted) > 2:
                 raise botexceptions.InvalidBookmark(bookmark_name)
             elif len(splitted) == 1:
                 playlist_id = None
             else:
                 playlist_id = splitted[1].strip()
             self.set_bookmark(bookmark_name, track_id, playlist_id)
-
 
     def load_config(self, filename: str):
         """
@@ -116,6 +116,18 @@ class BotController(object):
             else:
                 # DuplicateSectionError, DuplicateOption...
                 raise
+
+    def write_config(self, configfile):
+        """
+
+        :param configfile: The file like object to write the config into
+        :type configfile: File
+        :return:
+        :rtype:
+
+        Write the config into the specified configfile
+        """
+        self._config.write(configfile)
 
     def has_access(self, telegram_id: int) -> bool:
         """
