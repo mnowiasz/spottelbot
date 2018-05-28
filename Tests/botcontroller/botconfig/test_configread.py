@@ -35,9 +35,12 @@ def test_spotify_username():
 
 class TestAccessConfig(object):
     _test_data = (
-        (12354, True),
-        (543431, True),
-        (4711, False)
+        ("12354", True),
+        ("543431", True),
+        ("4711", False),
+        ("@myaccount", True),
+        ("@anotheruser", True),
+        ("@nosuchuser", False)
     )
 
     @classmethod
@@ -61,7 +64,7 @@ def test_duplicate_users():
     config_file_duplicate = os.path.join(_config_path, "duplicateusers.config")
     with pytest.raises(botexceptions.DuplicateUsers) as duplicate:
         _controller.config.load_config(open(config_file_duplicate))
-    assert 12354 == duplicate.value.duplicate_id
+    assert "12354" == duplicate.value.duplicate_id
 
 
 def test_loadconfig_badusers():

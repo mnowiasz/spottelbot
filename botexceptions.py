@@ -1,10 +1,9 @@
 """Custom exception where the builin exceptions won't suffice"""
 
 
-# Invalid user in the configfile (non-numeric UserID)
-class InvalidUser(ValueError):
-    def __init__(self, super_exception, userid):
-        super(InvalidUser, self).__init__(super_exception)
+# Invalid user in the configfile (non-numeric UserID with no "@")
+class InvalidUser(Exception):
+    def __init__(self, userid):
         self.bad_id = userid
 
 

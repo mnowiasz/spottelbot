@@ -32,14 +32,18 @@ class BotConfig(object):
             raise botexceptions.MissingUsers
 
         for telegram_id in users.split(","):
+            stripped = telegram_id.strip()
+            # A valid telegram user is either numeric or starts with an @
+
+            if not stripped.isdigit():
+                if not stripped.startswith("@"):
+                    raise botexceptions.InvalidUser(stripped)
+
             try:
-                self._controller.add_access(int(telegram_id))
-            # If a user isn't numeric, it's invalid
-            except ValueError as v:
-                raise botexceptions.InvalidUser(v, telegram_id.strip()) from v
+                self._controller.add_access(stripped)
             # A KeyError in add_access() can only mean that a user ID alread exist
             except KeyError as k:
-                raise botexceptions.DuplicateUsers(int(telegram_id)) from k
+                raise botexceptions.DuplicateUsers(stripped) from k
 
     def _load_spotify_config(self):
         """

@@ -11,12 +11,14 @@ def test_botname():
 class TestAcess(object):
     _test_data = (
         # ID, Access granted, exception raised (add)
-        (1, True, False),
-        (2, False, False),
-        (3, True, False),
-        (4, True, False),
-        (4, True, True),
-        (1, True, True)
+        ("1", True, False),
+        ("2", False, False),
+        ("3", True, False),
+        ("4", True, False),
+        ("4", True, True),
+        ("1", True, True),
+        ("@myaccount", True, False),
+        ("@anotheruser", True, False)
     )
 
     @classmethod

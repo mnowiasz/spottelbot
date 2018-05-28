@@ -36,19 +36,19 @@ class TestConfigWrite(object):
         assert test_token == self._controller.config._telegram_token
 
     def test_adduser(self):
-        test_id = 4711
+        test_id = "4711"
         self._controller.config.load_config(open(self._config_file_valid))
         self._controller.add_access(test_id)
         self._reload()
         assert self._controller.has_access(test_id)
 
     def test_removeuser(self):
-        test_id = 543431
+        test_id = "543431"
         self._controller.config.load_config(open(self._config_file_valid))
         self._controller.remove_access(test_id)
         self._reload()
         assert not self._controller.has_access(test_id)
-        assert self._controller.has_access(12354)
+        assert self._controller.has_access("12354")
 
     # See test_changetoken()
     def test_change_spotify_username(self):

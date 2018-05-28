@@ -22,12 +22,10 @@ class BotController(object):
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
         self.config = botconfig.BotConfig(self)
 
-
-
-    def has_access(self, telegram_id: int) -> bool:
+    def has_access(self, telegram_id: str) -> bool:
         """
-        :param telegram_id: The telegram ID
-        :type telegram_id: int
+        :param telegram_id: The telegram ID (either numeric or "@..")
+        :type telegram_id: str
         :return: if the telegram ID is allowed to query the bot
         :rtype: bool
 
@@ -35,24 +33,25 @@ class BotController(object):
         """
         return telegram_id in self.access
 
-    def add_access(self, telegram_id: int):
+    def add_access(self, telegram_id: str):
         """
 
-        :param telegram_id: the telegram ID
-        :type telegram_id: int
+        :param telegram_id: the telegram ID (either numeric or "@..")
+        :type telegram_id: str
 
         Adds an entry to the list of allowed user ids. Raises a KeyError if the ID is already present
         """
+
         if self.has_access(telegram_id):
             raise KeyError(telegram_id)
 
         self.access.add(telegram_id)
 
-    def remove_access(self, telegram_id: int):
+    def remove_access(self, telegram_id: str):
         """
 
         :param telegram_id: the telegram ID
-        :type telegram_id: int
+        :type telegram_id: str
 
         Removes the entry from the list of allowed user ids. Raises a KeyError if the ID is not present
         """
