@@ -1,5 +1,6 @@
 """ The Bot controller - access rights, bookmarks, and so on """
 import botconfig
+import spotifycontroller
 
 bookmark_current = "Current"
 
@@ -21,6 +22,7 @@ class BotController(object):
         self.bookmarks = {}
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
         self.config = botconfig.BotConfig(self)
+        self.spotify_controller = spotifycontroller.SpotifyController()
 
     def has_access(self, telegram_id: str) -> bool:
         """

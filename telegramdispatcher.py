@@ -1,4 +1,5 @@
 """ Processing/relaying telegram messages"""
+import botcontroller
 import botexceptions
 import spotifycontroller
 
@@ -91,4 +92,20 @@ def _last_range(arguments):
 
 
 class TelegramDispatcher:
-    pass
+
+    def __init__(self, controller: botcontroller.BotController):
+        self._controller = controller
+
+    def mark(self, arguments):
+        """
+
+        :param arguments: Arguments to the "/mark" command
+        :type arguments: list
+        :return:
+        :rtype:
+
+        Sets a bookmark
+        """
+
+        (track_id, playlist_id) = self._controller.spotify_controller.get_current()
+        self._controller.set_bookmark(botcontroller.bookmark_current, track_id, playlist_id)
