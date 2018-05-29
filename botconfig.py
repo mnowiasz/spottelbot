@@ -95,7 +95,6 @@ class BotConfig(object):
 
         # Transform generic exceptions into more specific ones which are more easily processed, resulting in more
         # readable code
-
         except KeyError as key_error:
             missing_key = key_error.args[0]
             if missing_key == self._telegram_section or missing_key == self._spotify_section:

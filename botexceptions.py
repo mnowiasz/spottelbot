@@ -34,7 +34,12 @@ class MissingSection(Exception):
 
 
 # Invalid Bookmarks (more than one or two entries)
-
 class InvalidBookmark(Exception):
     def __init__(self, bookmark=None):
         self.invalid_bookmark = bookmark
+
+
+# Invalid range/argument to /last
+class InvalidRange(Exception):
+    def __init__(self, argument=None):
+        self.invalid_argument = argument
