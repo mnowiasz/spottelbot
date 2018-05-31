@@ -4,10 +4,10 @@ import botexceptions
 import spotifycontroller
 
 
-def __parse_arg(parse_string):
+def __parse_last_arg(parse_string):
     """
 
-    :param parse_string: The string ti oarse
+    :param parse_string: The string to parse
     :type parse_string: str
     :return: A tuple containung upper and lower bound
     :rtype: tuple
@@ -65,7 +65,7 @@ def _last_range(arguments):
             upper_bound = int(arguments[0])
         else:
             # Case 2: /last with a ranged argument (/last 1-5, /last 5-, /last -10
-            lower_bound, upper_bound = __parse_arg(value)
+            lower_bound, upper_bound = __parse_last_arg(value)
 
     # /last with two arguments: /last 1- 5, /last 1 -5...
     elif len(arguments) == 2 or len(arguments) == 3:
@@ -73,7 +73,7 @@ def _last_range(arguments):
             value = ""
             for string in arguments:
                 value += string
-            lower_bound, upper_bound = __parse_arg(value)
+            lower_bound, upper_bound = __parse_last_arg(value)
         except ValueError:
             raise botexceptions.InvalidRange(value)
     else:
@@ -106,6 +106,56 @@ class TelegramDispatcher:
 
         Sets a bookmark
         """
+        track_id = playlist_id = None
+        bookmark_name = None
+        index = -1
 
-        (track_id, playlist_id) = self._controller.spotify_controller.get_current()
-        self._controller.set_bookmark(botcontroller.bookmark_current, track_id, playlist_id)
+        if not arguments:
+            # No arguments ("/mark")
+            index = botcontroller.bookmark_current
+            bookmark_name = botcontroller.bookmark_current
+
+        elif len(arguments) == 1:
+            # /mark with one argument (/mark current, /mark 5 == /mark current 5, /mark a == /mark a current
+            value = arguments[0]
+
+            if value.isdigit():
+                # /mark 5, /mark 4
+                index = int(value)
+                bookmark_name = botcontroller.bookmark_current
+            else:
+                # /mark a, /mark current,,,
+                if value == botcontroller.bookmark_current:
+                    # /mark current
+                    index = botcontroller.bookmark_current
+                    bookmark_name = botcontroller.bookmark_current
+                else:
+                    # /mark a, /mark MyBookmark
+                    index = botcontroller.bookmark_current
+                    bookmark_name = value
+
+        elif len(arguments) == 2:
+            # /mark with two arguments - /mark current 5,/mark mybookmark current, /mark mybookmark 1
+            bookmark_name = arguments[0]
+            value = arguments[1]
+
+            if value.isdigit():
+                # /mark bookmark 5
+                index = int(value)
+            elif value == botcontroller.bookmark_current:
+                index = botcontroller.bookmark_current
+            else:
+                # /mark bookmark something ?
+                raise botexceptions.InvalidBookmark(value)
+        else:
+            # More than 2 arguments - /mark bookmark 5 3 4. Makes no sense
+            invalid_value = ""
+            for string in arguments:
+                invalid_value += string
+            raise botexceptions.InvalidBookmark(invalid_value)
+
+        if index == bookmark_name:
+            (track_id, playlist_id) = self._controller.spotify_controller.get_current()
+        else:
+            (track_id, playlist_id) = self._controller.spotify_controller.get_last_index(index)
+        self._controller.set_bookmark(bookmark_name, track_id, playlist_id)

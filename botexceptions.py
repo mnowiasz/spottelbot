@@ -39,7 +39,7 @@ class InvalidBookmark(Exception):
         self.invalid_bookmark = bookmark
 
 
-# Invalid range/argument to /last
+# Invalid range/argument to /last or /mark
 class InvalidRange(Exception):
     def __init__(self, argument=None):
         self.invalid_argument = argument

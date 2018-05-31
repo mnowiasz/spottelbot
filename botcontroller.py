@@ -2,7 +2,8 @@
 import botconfig
 import spotifycontroller
 
-bookmark_current = "Current"
+# Both a bookmark name and a value (Currently playing)
+bookmark_current = "current"
 
 
 # Make sure that "current" is first in list. After that, the list can be sorted
@@ -75,10 +76,11 @@ class BotController(object):
         :return: The sanitized string
         :rtype: str
 
-        Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores)
+        Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores). Also transforms
+        to lower
         """
 
-        return input.strip().translate(self._translation_table)
+        return input.strip().translate(self._translation_table).lower()
 
     def set_bookmark(self, bookmark_name: str, track_id: str, playlist_id: str = None):
         """

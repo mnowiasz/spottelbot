@@ -7,10 +7,10 @@ import botcontroller
 class TestBookmarksAddRemove(object):
     _test_data = (
         # Bookmark name, title_id, playlist_id
-        ("current", "12345", None),
-        ("A", "6cdef0a", "abc12345"),
-        ("MyBookmark", "adef134", None),
-        ("Foo", "qras124dzu", "rerqzwe2")
+        (botcontroller.bookmark_current, "12345", None),
+        ("a", "6cdef0a", "abc12345"),
+        ("mybookmark", "adef134", None),
+        ("foo", "qras124dzu", "rerqzwe2")
     )
 
     @classmethod
@@ -45,7 +45,7 @@ class TestBookmarkMisc(object):
     def test_overwrite_bookmark(self):
         before = ("1234", "5678")
         after = ("abcd", None)
-        bookmarkname = "FooTestOverride"
+        bookmarkname = "footestoverride"
         self._test_controller.set_bookmark(bookmarkname, before[0], before[1])
         title, playlist = self._test_controller.get_bookmark(bookmarkname)
 
@@ -70,11 +70,11 @@ class TestBookmarkMisc(object):
 # Sanitized Tests
 class TestBookmarksSanitzied(object):
     _test_data = (
-        ("    Test     ", "Test"),
-        ("Bookmark ", "Bookmark"),
-        ("A Bookmark Containing Spaces", "A_Bookmark_Containing_Spaces"),
-        ("   Combined Test    ", "Combined_Test"),
-        ("\tTab\t", "Tab")
+        ("    Test     ", "test"),
+        ("Bookmark ", "bookmark"),
+        ("A Bookmark Containing Spaces", "a_bookmark_containing_spaces"),
+        ("   Combined Test    ", "combined_test"),
+        ("\tTab\t", "tab")
     )
 
     _test_playlist = "TestProbe"
@@ -106,7 +106,7 @@ class TestBookmarksSanitzied(object):
 class TestBookmarkSorted(object):
     _test_data = (
         ("Foxtrot", "Alpha", "Charlie", "Echo", "Delta", "Bravo", botcontroller.bookmark_current),
-        [botcontroller.bookmark_current, "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"]
+        [botcontroller.bookmark_current, "alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     )
 
     @classmethod
