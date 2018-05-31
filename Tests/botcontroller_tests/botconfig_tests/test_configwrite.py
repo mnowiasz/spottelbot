@@ -16,7 +16,6 @@ class TestConfigWrite(object):
     def _reload(self):
         with tempfile.TemporaryFile("r+") as outfile:
             self._controller.config.save_config(outfile)
-            outfile.seek(0)
             self._controller.config.load_config(outfile)
 
     def test_writeconfig(self):
@@ -86,3 +85,11 @@ class TestConfigWrite(object):
 
         with pytest.raises(KeyError):
             track_id, playlist_id = self._controller.get_bookmark(bookmark_name)
+
+    def test_duplicate_save(self):
+        self._controller.config.load_config(open(self._config_file_valid))
+        with tempfile.TemporaryFile("r+") as outfile:
+            self._controller.config.save_config(outfile)
+            self._controller.config.save_config(outfile)
+            self._controller.config.save_config(outfile)
+            self._controller.config.load_config(outfile)

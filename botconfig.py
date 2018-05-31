@@ -162,3 +162,4 @@ class BotConfig(object):
         self._save_spotify()
         self._save_bookmarks()
         self._config.write(configfile)
+        configfile.seek(0)
