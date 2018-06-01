@@ -1,6 +1,7 @@
 import pytest
 
 import botcontroller
+import botexceptions
 from tests.testdata import TestAccessData
 
 
@@ -28,3 +29,10 @@ class TestAcess(TestAccessData):
         else:
             self._test_controller.remove_access(telegram_id)
             assert not self._test_controller.has_access(telegram_id)
+
+    @pytest.mark.parametrize("telegram_id", (
+            "usernamewithout@", "@", "user@name"
+    ))
+    def test_illegal_username(self, telegram_id):
+        with pytest.raises(botexceptions.InvalidUser):
+            self._test_controller.add_access(telegram_id)

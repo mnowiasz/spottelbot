@@ -33,7 +33,7 @@ class TestAccessData(object):
                     cls._test_controller.add_access(telegram_id)
 
 
-# Adding/Removing Bookmars
+# Adding/Removing Bookmarks
 
 class TestBookmarkData(object):
     _test_data = (

@@ -176,3 +176,31 @@ class TelegramDispatcher:
                 break  # No point in going on. All bookmars are deleted.
             else:
                 self._controller.clear_bookmark(argument)
+
+    def deluser(self, telegram_ids):
+        """
+
+        :param telegram_ids: The arguments given to the "/deluser" command
+        :type telegram_ids: list
+        :return:
+        :rtype:
+
+        Removes access for one (or multiple) users. Raises the usual exceptions
+        """
+
+        for single_id in telegram_ids:
+            self._controller.remove_access(single_id)
+
+    def adduser(self, telegram_ids):
+        """
+
+        :param telegram_ids: The arguments given to the /adduser command
+        :type telegram_ids: list
+        :return:
+        :rtype:
+
+        Adds access for one (or multiple) users. Raises the usual exceptions
+        """
+
+        for single_id in telegram_ids:
+            self._controller.add_access(single_id)

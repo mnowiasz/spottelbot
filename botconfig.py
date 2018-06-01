@@ -33,15 +33,9 @@ class BotConfig(object):
 
         for telegram_id in users.split(","):
             stripped = telegram_id.strip()
-            # A valid telegram user is either numeric or starts with an @
-
-            if not stripped.isdigit():
-                if not stripped.startswith("@"):
-                    raise botexceptions.InvalidUser(stripped)
-
             try:
                 self._controller.add_access(stripped)
-            # A KeyError in add_access() can only mean that a user ID alread exist
+            # A KeyError in add_access() can only mean that a user ID already exist
             except KeyError as k:
                 raise botexceptions.DuplicateUsers(stripped) from k
 

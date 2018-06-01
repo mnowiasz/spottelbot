@@ -18,6 +18,28 @@ def _bookmark_compare(key):
         return key
 
 
+def _check_telegram_id(telegram_id: str):
+    """
+
+    :param telegram_id: The telegram ID
+    :type telegram_id: str
+    :return:
+    :rtype:
+
+    Checks if the telegram id is valid. Will raise and InvalidUser exception if not
+    """
+    illegal = False
+
+    if not telegram_id.isdigit():
+        if not telegram_id.startswith("@"):
+            illegal = True
+        elif len(telegram_id) == 1:  # Only one @
+            illegal = True
+
+    if illegal:
+        raise botexceptions.InvalidUser(telegram_id)
+
+
 class BotController(object):
     botname = "MyBot"
 
@@ -45,9 +67,10 @@ class BotController(object):
         :param telegram_id: the telegram ID (either numeric or "@..")
         :type telegram_id: str
 
-        Adds an entry to the list of allowed user ids. Raises a KeyError if the ID is already present
+        Adds an entry to the list of allowed user ids. Raises a KeyError if the ID is already present.
+        Raises an IllegalUsername when the telegram_id is not numeric and doesn't start with an @
         """
-
+        _check_telegram_id(telegram_id)
         if self.has_access(telegram_id):
             raise KeyError(telegram_id)
 
@@ -60,8 +83,10 @@ class BotController(object):
         :type telegram_id: str
 
         Removes the entry from the list of allowed user ids. Raises a KeyError if the ID is not present
+        Raises an IllegalUsername when the telegram_id is not numeric and doesn't start with an @
         """
 
+        # No need to check the ID. Since add_access checks, the (illegal) ID can't be here.
         self.access.remove(telegram_id)
 
     def clear_access(self):
