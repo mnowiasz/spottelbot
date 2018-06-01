@@ -1,5 +1,6 @@
 """ The Bot controller - access rights, bookmarks, and so on """
 import botconfig
+import botexceptions
 import spotifycontroller
 
 # Both a bookmark name and a value (Currently playing)
@@ -15,7 +16,6 @@ def _bookmark_compare(key):
 
 
 class BotController(object):
-
     botname = "MyBot"
 
     def __init__(self):
@@ -85,15 +85,23 @@ class BotController(object):
     def set_bookmark(self, bookmark_name: str, track_id: str, playlist_id: str = None):
         """
 
-        :param bookmark_name: The name of the bookmark ("current", "foo", "bar"..)
+        :param bookmark_name: The name of the bookmark ("current", "foo", "bar"..).
         :type bookmark_name: str
         :param track_id: Spotify's track ID - base62 coded
         :type track_id: str
         :param playlist_id: The (optional) playlist ID - base62 coded
         :type playlist_id: str
 
-        Sets a bookmark. If already prsenet, the bookmark will be overwritten
+        Sets a bookmark. If already present, the bookmark will be overwritten. If the name is a numeric value, an
+        InvalidBookmark will be raised, because otherwise it would be very confusing setting a numeric bookmark to
+        a numeric value (last tracks's list)
         """
+
+        sanitzed = self._sanitize_bookmark(bookmark_name)
+
+        if sanitzed.isdigit():
+            raise botexceptions.InvalidBookmark(sanitzed)
+
         self.bookmarks[self._sanitize_bookmark(bookmark_name)] = (track_id, playlist_id)
 
     def get_bookmark(self, bookmark_name: str) -> (str, str):

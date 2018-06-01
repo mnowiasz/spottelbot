@@ -1,6 +1,7 @@
 import pytest
 
 import botcontroller
+import botexceptions
 
 
 # Add and remove bookmarks
@@ -119,3 +120,13 @@ class TestBookmarkSorted(object):
     def test_get_bookmarks(self):
         sorted_list = self._test_controller.get_bookmarks()
         assert self._test_data[1] == sorted_list
+
+
+# Illegal bookmarknames
+@pytest.mark.parametrize("bookmarkname", (
+        "1", "0000005", "4713422", "17", "           12     ", "13           "
+))
+def test_illegal_bookmark(bookmarkname):
+    controller = botcontroller.BotController()
+    with pytest.raises(botexceptions.InvalidBookmark):
+        controller.set_bookmark(bookmarkname, None, None)
