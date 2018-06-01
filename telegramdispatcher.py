@@ -96,7 +96,7 @@ class TelegramDispatcher:
     def __init__(self, controller: botcontroller.BotController):
         self._controller = controller
 
-    def mark(self, arguments):
+    def mark(self, arguments: list):
         """
 
         :param arguments: Arguments to the "/mark" command
@@ -104,7 +104,7 @@ class TelegramDispatcher:
         :return:
         :rtype:
 
-        Sets a bookmark
+        Sets a bookmark. Raises a InvalidBookmark exception if something is wrong
         """
         track_id = playlist_id = None
         bookmark_name = None
@@ -159,3 +159,18 @@ class TelegramDispatcher:
         else:
             (track_id, playlist_id) = self._controller.spotify_controller.get_last_index(index)
         self._controller.set_bookmark(bookmark_name, track_id, playlist_id)
+
+    def delete(self, arguments: list):
+        """
+
+        :param arguments: The arguments given to the "/delete" command
+        :type arguments: list
+        :return:
+        :rtype:
+
+        Deletes a bookmark (or all, /delete or /clear all), Raises an invalid bookmark exception
+        """
+
+        # /delete withouth an argument
+        if arguments is None:
+            raise botexceptions.InvalidBookmark("<none>")
