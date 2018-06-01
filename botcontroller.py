@@ -3,8 +3,11 @@ import botconfig
 import botexceptions
 import spotifycontroller
 
-# Both a bookmark name and a value (Currently playing)
+"""Both a bookmark name and a value (Currently playing)"""
 bookmark_current = "current"
+
+""" /delete all, /clear all"""
+bookmark_all = "all"
 
 
 # Make sure that "current" is first in list. After that, the list can be sorted
@@ -94,12 +97,13 @@ class BotController(object):
 
         Sets a bookmark. If already present, the bookmark will be overwritten. If the name is a numeric value, an
         InvalidBookmark will be raised, because otherwise it would be very confusing setting a numeric bookmark to
-        a numeric value (last tracks's list)
+        a numeric value (last tracks's list). "all" is also an invalid bookmark name, as in /delete all
         """
 
         sanitzed = self._sanitize_bookmark(bookmark_name)
 
-        if sanitzed.isdigit():
+        # "5" or "all"
+        if sanitzed.isdigit() or sanitzed == bookmark_all:
             raise botexceptions.InvalidBookmark(sanitzed)
 
         self.bookmarks[self._sanitize_bookmark(bookmark_name)] = (track_id, playlist_id)

@@ -1,11 +1,13 @@
 # -*- coding: latin-1 -*-
 
-import spotipy
-from  spotipy.oauth2 import SpotifyClientCredentials
 import unittest
 
+from spotipy.oauth2 import SpotifyClientCredentials
+
+import spotipy
+
 '''
-    Client Credentials Requests Tests
+    Client Credentials Requests tests
 '''
 
 class ClientCredentialsTestSpotipy(unittest.TestCase):

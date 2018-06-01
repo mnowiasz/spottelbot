@@ -1,4 +1,4 @@
-""" Tests of the mark / bookmark features"""
+""" tests of the mark / bookmark features"""
 import random
 import string
 
@@ -10,8 +10,6 @@ import spotifycontroller
 import telegramdispatcher
 
 """ Mock track ids"""
-
-
 def _random_id():
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=16))
 

@@ -70,25 +70,20 @@ def _last_range(arguments):
     # /last with two arguments: /last 1- 5, /last 1 -5...
     elif len(arguments) == 2 or len(arguments) == 3:
         try:
-            value = ""
-            for string in arguments:
-                value += string
+            value = "".join(arguments)
             lower_bound, upper_bound = __parse_last_arg(value)
         except ValueError:
             raise botexceptions.InvalidRange(value)
     else:
         # Too much arguments
-        invalid_value = ""
-        for string in arguments:
-            invalid_value += string
-            raise botexceptions.InvalidRange(invalid_value)
+        raise botexceptions.InvalidRange(" ".join(arguments))
 
     if upper_bound < 1 or upper_bound > spotifycontroller.last_limit:
         raise botexceptions.InvalidRange(upper_bound)
     if lower_bound < 1 or lower_bound > spotifycontroller.last_limit:
         raise botexceptions.InvalidRange(lower_bound)
 
-    return (lower_bound, upper_bound)
+    return lower_bound, upper_bound
 
 
 class TelegramDispatcher:
@@ -149,10 +144,7 @@ class TelegramDispatcher:
                 raise botexceptions.InvalidBookmark(value)
         else:
             # More than 2 arguments - /mark bookmark 5 3 4. Makes no sense
-            invalid_value = ""
-            for string in arguments:
-                invalid_value += string
-            raise botexceptions.InvalidBookmark(invalid_value)
+            raise botexceptions.InvalidBookmark(" ".join(arguments))
 
         if index == bookmark_name:
             (track_id, playlist_id) = self._controller.spotify_controller.get_current()
@@ -168,9 +160,19 @@ class TelegramDispatcher:
         :return:
         :rtype:
 
-        Deletes a bookmark (or all, /delete or /clear all), Raises an invalid bookmark exception
+        Deletes a (or some) bookmark(s) (or all, /delete or /clear all), Raises an invalid bookmark exception.
         """
 
-        # /delete withouth an argument
+        # /delete without an argument
         if arguments is None:
             raise botexceptions.InvalidBookmark("<none>")
+
+        for argument in arguments:
+            # /delete 5
+            if argument.isdigit():
+                raise botexceptions.InvalidBookmark(argument)
+            elif argument == botcontroller.bookmark_all:
+                self._controller.clear_bookmarks()
+                break  # No point in going on. All bookmars are deleted.
+            else:
+                self._controller.clear_bookmark(argument)

@@ -2,33 +2,20 @@ import pytest
 
 import botcontroller
 import botexceptions
+from tests.testdata import TestBookmarkData
 
 
 # Add and remove bookmarks
-class TestBookmarksAddRemove(object):
-    _test_data = (
-        # Bookmark name, title_id, playlist_id
-        (botcontroller.bookmark_current, "12345", None),
-        ("a", "6cdef0a", "abc12345"),
-        ("mybookmark", "adef134", None),
-        ("foo", "qras124dzu", "rerqzwe2")
-    )
+class TestBookmarksAddRemove(TestBookmarkData):
 
-    @classmethod
-    def setup_class(cls):
-        cls._test_controller = botcontroller.BotController()
-        for entry in cls._test_data:
-            name, title_id, playlist_id = entry
-            cls._test_controller.set_bookmark(name, title_id, playlist_id)
-
-    @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", _test_data)
+    @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", TestBookmarkData._test_data)
     def test_get_bookmark(self, bookmark_name, title_id, playlist_id):
         title, playlist = self._test_controller.get_bookmark(bookmark_name)
         assert title_id == title
         assert playlist_id == playlist
 
     # Clear all added bookmarks
-    @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", _test_data)
+    @pytest.mark.parametrize("bookmark_name, title_id, playlist_id", TestBookmarkData._test_data)
     def test_clear_bookmark(self, bookmark_name, title_id, playlist_id):
         self._test_controller.clear_bookmark(bookmark_name)
         with  pytest.raises(KeyError):
@@ -68,7 +55,7 @@ class TestBookmarkMisc(object):
             self._test_controller.clear_bookmark("NONEXISTENT")
 
 
-# Sanitized Tests
+# Sanitized tests
 class TestBookmarksSanitzied(object):
     _test_data = (
         ("    Test     ", "test"),
@@ -124,7 +111,7 @@ class TestBookmarkSorted(object):
 
 # Illegal bookmarknames
 @pytest.mark.parametrize("bookmarkname", (
-        "1", "0000005", "4713422", "17", "           12     ", "13           "
+        "1", "0000005", "4713422", "17", "           12     ", "13           ", botcontroller.bookmark_all
 ))
 def test_illegal_bookmark(bookmarkname):
     controller = botcontroller.BotController()
