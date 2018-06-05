@@ -81,6 +81,11 @@ class BotConfig(object):
 
         self._config = configparser.ConfigParser()
         self._config.read_file(configfile)
+
+        # Reset fd so a reload won't do harm. On the other hand, the file in question could be changed so the
+        # filehandle would be invalid. But can't harm
+
+        configfile.seek(0)
         try:
             self._load_telegram_config()
             self._load_spotify_config()

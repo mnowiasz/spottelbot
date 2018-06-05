@@ -121,3 +121,10 @@ def test_loadconfig_missingbookmarks():
     with pytest.raises(botexceptions.InvalidBookmark) as invalid_bookmark:
         _controller.config.load_config(open(config_file_missing))
     assert "current" == invalid_bookmark.value.invalid_bookmark
+
+
+def test_duplicate_configread():
+    test_file = open(_config_file_valid)
+    _controller.config.load_config(test_file)
+    _controller.config.load_config(test_file)
+    _controller.config.load_config(test_file)
