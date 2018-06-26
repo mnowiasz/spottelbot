@@ -112,7 +112,7 @@ class TelegramDispatcher:
 
         Connect to telegram, start the loop
         """
-        self._updater = telegram.ext.Updater(self._controller.config._telegram_token)
+        self._updater = telegram.ext.Updater(self._controller.config.telegram_token)
 
         for handler in self._handlers:
             self._updater.dispatcher.add_handler(telegram.ext.CommandHandler(handler[0], handler[1], pass_args=True))

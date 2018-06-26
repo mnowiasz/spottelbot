@@ -22,8 +22,8 @@ class BotConfig(object):
         Loads telegram's config items
         """
 
-        self._telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
-        if self._telegram_token == "":
+        self.telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
+        if self.telegram_token == "":
             raise botexceptions.MissingTelegramToken()
         self._controller.clear_access()
         users = self._config[self._telegram_section][self._telegram_entry_users]
@@ -114,7 +114,7 @@ class BotConfig(object):
 
         self._config.remove_section(self._telegram_section)
         self._config.add_section(self._telegram_section)
-        self._config[self._telegram_section][self._telegram_entry_token] = self._telegram_token
+        self._config[self._telegram_section][self._telegram_entry_token] = self.telegram_token
         if self._controller.access:
             self._config[self._telegram_section][self._telegram_entry_users] = \
                 ",".join(str(telegram_id) for telegram_id in self._controller.access)
