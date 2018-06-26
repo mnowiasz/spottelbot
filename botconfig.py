@@ -2,7 +2,6 @@
 
 import configparser
 
-import botcontroller
 import botexceptions
 
 
@@ -14,7 +13,7 @@ class BotConfig(object):
     _spotify_entry_username = "username"
     _bookmark_section = "bookmarks"
 
-    def __init__(self, controller: botcontroller):
+    def __init__(self, controller):
         self._controller = controller
         self._config = None
 

@@ -1,4 +1,10 @@
 """ Processing/relaying telegram messages"""
+import threading
+
+import telegram
+import telegram.bot
+import telegram.ext
+
 import botcontroller
 import botexceptions
 import spotifycontroller
@@ -88,8 +94,47 @@ def _last_range(arguments):
 
 class TelegramDispatcher:
 
-    def __init__(self, controller: botcontroller.BotController):
+    def __init__(self, controller):
         self._controller = controller
+
+        # Command (/whoami) to handler,
+        self._handlers = (
+            ("whoami", self._whoami_handler),
+            ("quit", self._quit_handler),
+            ("shutdown", self._quit_handler)
+        )
+
+    def connect(self):
+        """
+
+        :return:
+        :rtype:
+
+        Connect to telegram, start the loop
+        """
+        self._updater = telegram.ext.Updater(self._controller.config._telegram_token)
+
+        for handler in self._handlers:
+            self._updater.dispatcher.add_handler(telegram.ext.CommandHandler(handler[0], handler[1], pass_args=True))
+
+        self._updater.start_polling()
+
+    # "/whoami"
+    def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+
+        user: telegram.User = update.message.from_user
+        message = "You are @{} ({})".format(user.username, user.id)
+        bot.send_message(chat_id=update.message.chat_id, text=message)
+
+    # Has to be called from another thread
+    def _quit(self):
+        self._updater.stop()
+        self._updater.is_idle = False
+
+    # /quit, /shutdown
+    def _quit_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
+        threading.Thread(target=self._quit).start()
 
     def mark(self, arguments: list):
         """

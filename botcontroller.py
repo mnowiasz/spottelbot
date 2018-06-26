@@ -2,6 +2,7 @@
 import botconfig
 import botexceptions
 import spotifycontroller
+import telegramdispatcher
 
 """Both a bookmark name and a value (Currently playing)"""
 bookmark_current = "current"
@@ -49,6 +50,7 @@ class BotController(object):
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
         self.config = botconfig.BotConfig(self)
         self.spotify_controller = spotifycontroller.SpotifyController()
+        self.telegram_dispatcher = telegramdispatcher.TelegramDispatcher(self)
 
     def has_access(self, telegram_id: str) -> bool:
         """
