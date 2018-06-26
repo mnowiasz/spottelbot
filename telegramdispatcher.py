@@ -99,9 +99,9 @@ class TelegramDispatcher:
 
         # Command (/whoami) to handler,
         self._handlers = (
-            ("whoami", self._whoami_handler),
             ("quit", self._quit_handler),
-            ("shutdown", self._quit_handler)
+            ("shutdown", self._quit_handler),
+            ("whoami", self._whoami_handler)
         )
 
     def connect(self):
