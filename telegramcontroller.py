@@ -93,7 +93,18 @@ def _last_range(arguments):
     return lower_bound, upper_bound
 
 
-class TelegramController:
+class TelegramController(object):
+    class Decorators(object):
+        @classmethod
+        def restricted(self, method):
+            def wrapper(self, bot: telegram.Bot, update: telegram.Update, args):
+                user: telegram.User = update.message.from_user
+                if self._config.has_access("@" + user.username) or self._config.has_access(user.id):
+                    return method(self, bot, update, args)
+                else:
+                    return self._unauthorized(bot, update, args)
+
+            return wrapper
 
     def __init__(self, config: botconfig.BotConfig, spotify_controller: spotifycontroller.SpotifyController):
         """
@@ -136,6 +147,9 @@ class TelegramController:
 
         self._updater.start_polling()
 
+    def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
+        bot.send_message(chat_id=update.message.chat_id, text="Unauthorized")
+
     # "/whoami"
     def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
@@ -148,7 +162,8 @@ class TelegramController:
         self._updater.stop()
         self._updater.is_idle = False
 
-    # /quit, /shutdown
+    # /quit, /shutdown, bye
+    @Decorators.restricted
     def _quit_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
         threading.Thread(target=self._quit).start()
