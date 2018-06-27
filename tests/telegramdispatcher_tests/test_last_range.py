@@ -2,7 +2,7 @@ import pytest
 
 import botexceptions
 import spotifycontroller
-import telegramdispatcher
+import telegramcontroller
 
 
 # Test the argument of /last
@@ -26,6 +26,6 @@ import telegramdispatcher
 def test_last_range(value, expected, exception_expected):
     if exception_expected:
         with  pytest.raises(botexceptions.InvalidRange):
-            telegramdispatcher._last_range(value)
+            telegramcontroller._last_range(value)
     else:
-        assert expected == telegramdispatcher._last_range(value)
+        assert expected == telegramcontroller._last_range(value)

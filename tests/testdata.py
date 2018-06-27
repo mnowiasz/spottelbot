@@ -3,7 +3,7 @@
 import pytest
 
 import botconfig
-import telegramdispatcher
+import telegramcontroller
 
 
 # Test data for access
@@ -48,7 +48,7 @@ class TestBookmarkData(object):
     @classmethod
     def setup_class(cls):
         cls._test_config = botconfig.BotConfig()
-        cls._test_dispatcher = telegramdispatcher.TelegramDispatcher(cls._test_config, None)
+        cls._test_dispatcher = telegramcontroller.TelegramController(cls._test_config, None)
 
         for entry in cls._test_data:
             name, title_id, playlist_id = entry

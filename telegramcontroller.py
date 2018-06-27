@@ -93,9 +93,16 @@ def _last_range(arguments):
     return lower_bound, upper_bound
 
 
-class TelegramDispatcher:
+class TelegramController:
 
-    def __init__(self, config, spotify_controller):
+    def __init__(self, config: botconfig.BotConfig, spotify_controller: spotifycontroller.SpotifyController):
+        """
+
+        :param config: The botconfig
+        :type config: botconfig.BotConfig
+        :param spotify_controller: spotify controller
+        :type spotify_controller: spotifycontroller.SpotifyController
+        """
         self._config = config
         self._spotify_controller = spotify_controller
 

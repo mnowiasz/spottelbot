@@ -7,7 +7,7 @@ import pytest
 import botconfig
 import botexceptions
 import spotifycontroller
-import telegramdispatcher
+import telegramcontroller
 
 """ Mock track ids"""
 def _random_id():
@@ -33,7 +33,7 @@ def mockget_last_index(last_id):
 def test_mark_current(monkeypatch):
     config = botconfig.BotConfig()
 
-    dispatcher = telegramdispatcher.TelegramDispatcher(config, spotifycontroller.SpotifyController())
+    dispatcher = telegramcontroller.TelegramController(config, spotifycontroller.SpotifyController())
 
     monkeypatch.setattr(dispatcher._spotify_controller, "get_current", mockget_current)
 
@@ -47,7 +47,7 @@ class TestMark:
     @classmethod
     def setup_class(cls):
         cls._test_config = botconfig.BotConfig()
-        cls._test_dispatcher = telegramdispatcher.TelegramDispatcher(cls._test_config,
+        cls._test_dispatcher = telegramcontroller.TelegramController(cls._test_config,
                                                                      spotifycontroller.SpotifyController())
 
     # /mark with parameters
