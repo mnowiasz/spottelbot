@@ -1,11 +1,12 @@
 """ Processing/relaying telegram messages"""
+import collections
 import threading
 
 import telegram
 import telegram.bot
 import telegram.ext
 
-import botcontroller
+import botconfig
 import botexceptions
 import spotifycontroller
 
@@ -94,14 +95,15 @@ def _last_range(arguments):
 
 class TelegramDispatcher:
 
-    def __init__(self, controller):
-        self._controller = controller
+    def __init__(self, config, spotify_controller):
+        self._config = config
+        self._spotify_controller = spotify_controller
 
-        # Command (/whoami) to handler,
+        # Command(s), handler, Helptext
         self._handlers = (
-            ("quit", self._quit_handler),
-            ("shutdown", self._quit_handler),
-            ("whoami", self._whoami_handler)
+            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)"),
+            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID"),
+            ("help", self._help_handler, "This command"),
         )
 
     def connect(self):
@@ -112,10 +114,18 @@ class TelegramDispatcher:
 
         Connect to telegram, start the loop
         """
-        self._updater = telegram.ext.Updater(self._controller.config.telegram_token)
+        self._updater = telegram.ext.Updater(self._config.telegram_token)
 
         for handler in self._handlers:
-            self._updater.dispatcher.add_handler(telegram.ext.CommandHandler(handler[0], handler[1], pass_args=True))
+            command_s = handler[0]
+            method_handler = handler[1]
+            if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
+                for command in command_s:
+                    self._updater.dispatcher.add_handler(
+                        telegram.ext.CommandHandler(command, method_handler, pass_args=True))
+            else:
+                self._updater.dispatcher.add_handler(
+                    telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
 
         self._updater.start_polling()
 
@@ -136,6 +146,9 @@ class TelegramDispatcher:
         bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
         threading.Thread(target=self._quit).start()
 
+    def _help_handler(selfself, bot: telegram.Bot, update: telegram.Update, args):
+        bot.send_message(chat_id=update.message.chat_id, text="Help!")
+
     def mark(self, arguments: list):
         """
 
@@ -152,8 +165,8 @@ class TelegramDispatcher:
 
         if not arguments:
             # No arguments ("/mark")
-            index = botcontroller.bookmark_current
-            bookmark_name = botcontroller.bookmark_current
+            index = botconfig.bookmark_current
+            bookmark_name = botconfig.bookmark_current
 
         elif len(arguments) == 1:
             # /mark with one argument (/mark current, /mark 5 == /mark current 5, /mark a == /mark a current
@@ -162,16 +175,16 @@ class TelegramDispatcher:
             if value.isdigit():
                 # /mark 5, /mark 4
                 index = int(value)
-                bookmark_name = botcontroller.bookmark_current
+                bookmark_name = botconfig.bookmark_current
             else:
                 # /mark a, /mark current,,,
-                if value == botcontroller.bookmark_current:
+                if value == botconfig.bookmark_current:
                     # /mark current
-                    index = botcontroller.bookmark_current
-                    bookmark_name = botcontroller.bookmark_current
+                    index = botconfig.bookmark_current
+                    bookmark_name = botconfig.bookmark_current
                 else:
                     # /mark a, /mark MyBookmark
-                    index = botcontroller.bookmark_current
+                    index = botconfig.bookmark_current
                     bookmark_name = value
 
         elif len(arguments) == 2:
@@ -182,8 +195,8 @@ class TelegramDispatcher:
             if value.isdigit():
                 # /mark bookmark 5
                 index = int(value)
-            elif value == botcontroller.bookmark_current:
-                index = botcontroller.bookmark_current
+            elif value == botconfig.bookmark_current:
+                index = botconfig.bookmark_current
             else:
                 # /mark bookmark something ?
                 raise botexceptions.InvalidBookmark(value)
@@ -192,10 +205,10 @@ class TelegramDispatcher:
             raise botexceptions.InvalidBookmark(" ".join(arguments))
 
         if index == bookmark_name:
-            (track_id, playlist_id) = self._controller.spotify_controller.get_current()
+            (track_id, playlist_id) = self._spotify_controller.get_current()
         else:
-            (track_id, playlist_id) = self._controller.spotify_controller.get_last_index(index)
-        self._controller.set_bookmark(bookmark_name, track_id, playlist_id)
+            (track_id, playlist_id) = self._spotify_controller.get_last_index(index)
+        self._config.set_bookmark(bookmark_name, track_id, playlist_id)
 
     def delete(self, arguments: list):
         """
@@ -216,11 +229,11 @@ class TelegramDispatcher:
             # /delete 5
             if argument.isdigit():
                 raise botexceptions.InvalidBookmark(argument)
-            elif argument == botcontroller.bookmark_all:
-                self._controller.clear_bookmarks()
+            elif argument == botconfig.bookmark_all:
+                self._config.clear_bookmarks()
                 break  # No point in going on. All bookmars are deleted.
             else:
-                self._controller.clear_bookmark(argument)
+                self._config.clear_bookmark(argument)
 
     def deluser(self, telegram_ids):
         """
@@ -234,7 +247,7 @@ class TelegramDispatcher:
         """
 
         for single_id in telegram_ids:
-            self._controller.remove_access(single_id)
+            self._config.remove_access(single_id)
 
     def adduser(self, telegram_ids):
         """
@@ -248,4 +261,4 @@ class TelegramDispatcher:
         """
 
         for single_id in telegram_ids:
-            self._controller.add_access(single_id)
+            self._config.add_access(single_id)

@@ -1,15 +1,19 @@
 """ The Main file"""
 import logging
 
-import botcontroller
+import botconfig
+import spotifycontroller
+import telegramdispatcher
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
 def botmain():
-    controller = botcontroller.BotController()
-    controller.config.load_config(open("/home/nowiasz/.spottelbot/config"))
-    controller.telegram_dispatcher.connect()
+    config = botconfig.BotConfig()
+    config.load_config(open("/home/nowiasz/.spottelbot/config"))
+    spotify_controller = spotifycontroller.SpotifyController()
+    dispatcher = telegramdispatcher.TelegramDispatcher(config, spotifycontroller)
+    dispatcher.connect()
 
     # TODO: Exceptions, commandline options
 

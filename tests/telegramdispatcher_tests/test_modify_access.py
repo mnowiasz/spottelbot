@@ -2,7 +2,7 @@
 
 import pytest
 
-import botcontroller
+import botconfig
 import botexceptions
 import telegramdispatcher
 from tests.testdata import TestAccessData
@@ -16,7 +16,7 @@ class TestRemoveAccess(TestAccessData):
             (["3", "4", "@myaccount"], False)
     ))
     def test_remove_access(self, telegram_ids, exception_expected):
-        test_dispatcher = telegramdispatcher.TelegramDispatcher(self._test_controller)
+        test_dispatcher = telegramdispatcher.TelegramDispatcher(self._test_config, None)
 
         if exception_expected:
             with pytest.raises(KeyError):
@@ -24,15 +24,15 @@ class TestRemoveAccess(TestAccessData):
         else:
             test_dispatcher.deluser(telegram_ids)
             for single_id in telegram_ids:
-                assert not self._test_controller.has_access(single_id)
+                assert not self._test_config.has_access(single_id)
 
 
 class TestAddAccess(object):
 
     @classmethod
     def setup_class(cls):
-        cls._test_controller = botcontroller.BotController()
-        cls._test_dispatcher = telegramdispatcher.TelegramDispatcher(cls._test_controller)
+        cls._test_config = botconfig.BotConfig()
+        cls._test_dispatcher = telegramdispatcher.TelegramDispatcher(cls._test_config, None)
 
     @pytest.mark.parametrize("telegram_ids, exception_expected", (
             (["1"], False),
@@ -47,4 +47,4 @@ class TestAddAccess(object):
         else:
             self._test_dispatcher.adduser(telegram_ids)
             for single_id in telegram_ids:
-                assert self._test_controller.has_access(single_id)
+                assert self._test_config.has_access(single_id)
