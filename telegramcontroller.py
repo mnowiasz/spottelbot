@@ -123,6 +123,7 @@ class TelegramController(object):
             (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)"),
             ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID"),
             ("help", self._help_handler, "This command"),
+            ("current", self._current_handler, "Get the currently playing track")
         )
 
     def connect(self):
@@ -169,8 +170,12 @@ class TelegramController(object):
         bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
         threading.Thread(target=self._quit).start()
 
-    def _help_handler(selfself, bot: telegram.Bot, update: telegram.Update, args):
+    def _help_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         bot.send_message(chat_id=update.message.chat_id, text="Help!")
+
+    def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        self._spotify_controller.get_current()
+        bot.send_message(chat_id=update.message.chat_id, text="Current")
 
     def mark(self, arguments: list):
         """
