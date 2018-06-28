@@ -1,9 +1,19 @@
 """ The spotify related functions and constants"""
 
+import botconfig
+
 last_limit = 50
 
 
-class SpotifyController:
+class SpotifyController(object):
+
+    def __init__(self, config: botconfig.BotConfig):
+        self._config = config
+        self._token = None
+
+    def connect(self):
+        pass
+
 
     def get_current(self):
         """

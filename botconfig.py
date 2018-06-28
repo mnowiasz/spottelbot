@@ -92,7 +92,6 @@ class BotConfig(object):
         self._spotify_client_secret = self._config[self._spotify_section].get(self._spotify_entry_client_secret)
         self._spotify_redirect_uri = self._config[self._spotify_section].get(self._spotify_entry_redirect_uri)
 
-
     def _load_bookmarks(self):
         """
 
@@ -183,7 +182,6 @@ class BotConfig(object):
         if self._spotify_redirect_uri:
             self._config[self._spotify_section][self._spotify_entry_redirect_uri] = self._spotify_redirect_uri
 
-
     def _save_bookmarks(self):
         """
 
@@ -257,17 +255,17 @@ class BotConfig(object):
         """
         self.access = set()
 
-    def _sanitize_bookmark(self, input: str) -> str:
+    def _sanitize_bookmark(self, bookmark_string: str) -> str:
         """
-        :param input: The string to sanitize
-        :type input: str
+        :param bookmark_string: The string to sanitize
+        :type bookmark_string: str
         :return: The sanitized string
         :rtype: str
         Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores). Also transforms
         to lower
         """
 
-        return input.strip().translate(self._translation_table).lower()
+        return bookmark_string.strip().translate(self._translation_table).lower()
 
     def set_bookmark(self, bookmark_name: str, track_id: str, playlist_id: str = None):
         """

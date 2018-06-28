@@ -27,6 +27,7 @@ class DuplicateUsers(Exception):
 class MissingSpotifyUsername(Exception):
     pass
 
+
 # A section is missing
 class MissingSection(Exception):
     def __init__(self, section=None):
@@ -43,3 +44,8 @@ class InvalidBookmark(Exception):
 class InvalidRange(Exception):
     def __init__(self, argument=None):
         self.invalid_argument = argument
+
+
+# Unable to connect to spotify
+class SpotifyAuth(Exception):
+    pass

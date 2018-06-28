@@ -40,7 +40,7 @@ def __parse_last_arg(parse_string):
         lower_bound = int(value_list[0])
     upper_bound = int(value_list[1])
 
-    return (lower_bound, upper_bound)
+    return lower_bound, upper_bound
 
 
 def _last_range(arguments):
@@ -116,6 +116,7 @@ class TelegramController(object):
         """
         self._config = config
         self._spotify_controller = spotify_controller
+        self._updater = None
 
         # Command(s), handler, Helptext
         self._handlers = (
