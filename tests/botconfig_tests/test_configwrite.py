@@ -56,6 +56,30 @@ class TestConfigWrite(object):
         self._reload()
         assert test_username == self._config._spotify_username
 
+    # See test_changetoken()
+    def test_change_spotify_client_id(self):
+        test_client_id = "foobar12345"
+        self._config.load_config(open(self._config_file_valid))
+        self._config._spotify_client_id = test_client_id
+        self._reload()
+        assert test_client_id == self._config._spotify_client_id
+
+    # See test_changetoken()
+    def test_change_spotify_client_secret(self):
+        test_client_secret = "MyNewSecret"
+        self._config.load_config(open(self._config_file_valid))
+        self._config._spotify_client_secret = test_client_secret
+        self._reload()
+        assert test_client_secret == self._config._spotify_client_secret
+
+    # See test_changetoken()
+    def test_change_spotify_redirect_uri(self):
+        test_redirect_uri = "http://www.google.com/"
+        self._config.load_config(open(self._config_file_valid))
+        self._config._spotify_redirect_uri = test_redirect_uri
+        self._reload()
+        assert test_redirect_uri == self._config._spotify_redirect_uri
+
     @pytest.mark.parametrize("bookmark_name, track_id, playlist_id", (
             ("current", "12345abcdef", None),
             ("current", "abcdefg", "hijklmno"),

@@ -47,6 +47,9 @@ class BotConfig(object):
     _telegram_entry_users = "users"
     _spotify_section = "spotify"
     _spotify_entry_username = "username"
+    _spotify_entry_client_id = "client_id"
+    _spotify_entry_client_secret = "client_secret"
+    _spotify_entry_redirect_uri = "redirect_uri"
     _bookmark_section = "bookmarks"
 
     def __init__(self):
@@ -85,6 +88,10 @@ class BotConfig(object):
         self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username]
         if self._spotify_username == "":
             raise botexceptions.MissingSpotifyUsername()
+        self._spotify_client_id = self._config[self._spotify_section].get(self._spotify_entry_client_id)
+        self._spotify_client_secret = self._config[self._spotify_section].get(self._spotify_entry_client_secret)
+        self._spotify_redirect_uri = self._config[self._spotify_section].get(self._spotify_entry_redirect_uri)
+
 
     def _load_bookmarks(self):
         """
@@ -166,6 +173,16 @@ class BotConfig(object):
         self._config.remove_section(self._spotify_section)
         self._config.add_section(self._spotify_section)
         self._config[self._spotify_section][self._spotify_entry_username] = self._spotify_username
+
+        if self._spotify_client_id:
+            self._config[self._spotify_section][self._spotify_entry_client_id] = self._spotify_client_id
+
+        if self._spotify_client_secret:
+            self._config[self._spotify_section][self._spotify_entry_client_secret] = self._spotify_client_secret
+
+        if self._spotify_redirect_uri:
+            self._config[self._spotify_section][self._spotify_entry_redirect_uri] = self._spotify_redirect_uri
+
 
     def _save_bookmarks(self):
         """
