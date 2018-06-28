@@ -191,7 +191,6 @@ class TelegramController(object):
         bot.send_message(chat_id=update.message.chat_id, text="Last {} - {}".format(lower, upper))
         # TODO: Exceptions
 
-
     def mark(self, arguments: list):
         """
 

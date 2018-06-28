@@ -61,7 +61,6 @@ class SpotifyController(object):
 
         track = self._client.current_user_playing_track()
 
-
         return (None, None)
         # TODO: Functionality
 
@@ -79,7 +78,6 @@ class SpotifyController(object):
         """
 
         return self._client.current_user_recently_played(upper + 1)["items"][lower:upper + 1]
-
 
     def get_last_index(self, index: int):
         """
