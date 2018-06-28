@@ -5,6 +5,7 @@ from pathlib import Path
 
 import botconfig
 import spotifycontroller
+import telegramcontroller
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -46,8 +47,8 @@ def botmain():
     config.load_config(configfile.open())
     spotify_controller = spotifycontroller.SpotifyController(config)
     spotify_controller.connect()
-    # dispatcher = telegramcontroller.TelegramController(config, spotifycontroller)
-    # dispatcher.connect()
+    telegram_controller = telegramcontroller.TelegramController(config, spotify_controller)
+    telegram_controller.connect()
 
     # TODO: Exceptions
 

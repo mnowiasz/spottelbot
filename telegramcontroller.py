@@ -38,7 +38,11 @@ def __parse_last_arg(parse_string):
         lower_bound = 1
     else:
         lower_bound = int(value_list[0])
-    upper_bound = int(value_list[1])
+
+    if value_list[1] == "":
+        upper_bound = spotifycontroller.last_limit
+    else:
+        upper_bound = int(value_list[1])
 
     return lower_bound, upper_bound
 
@@ -123,7 +127,8 @@ class TelegramController(object):
             (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)"),
             ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID"),
             ("help", self._help_handler, "This command"),
-            ("current", self._current_handler, "Get the currently playing track")
+            ("current", self._current_handler, "Get the currently playing track"),
+            ("last", self._last_handler, "Recently played tracks")
         )
 
     def connect(self):
@@ -176,6 +181,16 @@ class TelegramController(object):
     def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         self._spotify_controller.get_current()
         bot.send_message(chat_id=update.message.chat_id, text="Current")
+        # TODO: Functionality
+
+    # /last
+    def _last_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        lower, upper = _last_range(args)
+        self._spotify_controller.get_last_index(upper - 1)
+        # TODO: Real stuff
+        bot.send_message(chat_id=update.message.chat_id, text="Last {} - {}".format(lower, upper))
+        # TODO: Exceptions
+
 
     def mark(self, arguments: list):
         """
