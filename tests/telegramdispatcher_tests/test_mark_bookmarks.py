@@ -33,7 +33,7 @@ def mockget_last_index(last_id):
 def test_mark_current(monkeypatch):
     config = botconfig.BotConfig()
 
-    dispatcher = telegramcontroller.TelegramController(config, spotifycontroller.SpotifyController())
+    dispatcher = telegramcontroller.TelegramController(config, spotifycontroller.SpotifyController(config))
 
     monkeypatch.setattr(dispatcher._spotify_controller, "get_current", mockget_current)
 
@@ -48,7 +48,8 @@ class TestMark:
     def setup_class(cls):
         cls._test_config = botconfig.BotConfig()
         cls._test_dispatcher = telegramcontroller.TelegramController(cls._test_config,
-                                                                     spotifycontroller.SpotifyController())
+                                                                     spotifycontroller.SpotifyController(
+                                                                         cls._test_config))
 
     # /mark with parameters
     @pytest.mark.parametrize("params, bookmark_name, bookmark_index, exception_expected", (

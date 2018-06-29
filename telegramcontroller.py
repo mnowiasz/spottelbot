@@ -155,7 +155,7 @@ class TelegramController(object):
         self._updater.start_polling()
 
     def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
-        bot.send_message(chat_id=update.message.chat_id, text="Unauthorized")
+        bot.send_message(chat_id=update.message.chat_id, text="You are not authorized to use this function")
 
     # "/whoami"
     def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
@@ -184,12 +184,23 @@ class TelegramController(object):
         # TODO: Functionality
 
     # /last
+    @Decorators.restricted
     def _last_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        lower, upper = _last_range(args)
-        self._spotify_controller.get_last_index(upper - 1)
-        # TODO: Real stuff
-        bot.send_message(chat_id=update.message.chat_id, text="Last {} - {}".format(lower, upper))
-        # TODO: Exceptions
+
+        output = ""
+
+        try:
+            lower, upper = _last_range(args)
+            output_list = self._spotify_controller.get_last_tracks(lower, upper)
+
+            for i, item in enumerate(output_list, lower):
+                output += "{}: {}".format(i, item)
+                output += "\n"
+        except botexceptions.InvalidRange as range_error:
+            output = "Invalid range {}. Must be between 1 and {}".format(range_error.invalid_argument,
+                                                                         spotifycontroller.last_limit)
+
+        bot.send_message(chat_id=update.message.chat_id, text=output)
 
     def mark(self, arguments: list):
         """
