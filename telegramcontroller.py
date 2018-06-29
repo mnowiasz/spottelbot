@@ -143,7 +143,8 @@ class TelegramController(object):
             ("current", self._current_handler, "Get the currently playing track"),
             ("last", self._last_handler, "Recently played tracks"),
             (("show", "list"), self._list_handler, "Shows the bookmark(s)"),
-            (("mark", "set"), self._mark_handler, "Sets a bookmark")
+            (("mark", "set"), self._mark_handler, "Sets a bookmark"),
+            (("clear", "delete"), self._clear_handler, "Deletes a bookmark (or all)")
         )
 
     def _safe_send_message(self, bot: telegram.Bot, chat_id, output, split_char='\n', max_length=max_message_length,
@@ -273,12 +274,26 @@ class TelegramController(object):
 
         self._safe_send_message(bot, update.message.chat_id, output, parse_mode=telegram.ParseMode.MARKDOWN)
 
+    # /mark, /set..
     @Decorators.restricted
     @Decorators.autosave
     def _mark_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         message = self.mark(args)
         bot.send_message(chat_id=update.message.chat_id, text=message)
         # TODO: Exception
+
+    # /clear, /delete...
+    @Decorators.restricted
+    @Decorators.autosave
+    def _clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+
+        message = ""
+        try:
+            message = self.delete(args)
+        except botexceptions.InvalidBookmark as invalid:
+            message = "Invalid bookmark name {}".format(invalid.invalid_bookmark)
+
+        bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
     def mark(self, arguments: list) -> str:
         """
@@ -345,31 +360,53 @@ class TelegramController(object):
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
         return "Bookmark {} set".format(bookmark_name)
 
-
-    def delete(self, arguments: list):
+    def delete(self, arguments: list) -> str:
         """
 
         :param arguments: The arguments given to the "/delete" command
         :type arguments: list
-        :return:
-        :rtype:
+        :return: output of command
+        :rtype: str
 
-        Deletes a (or some) bookmark(s) (or all, /delete or /clear all), Raises an invalid bookmark exception.
+        Deletes a (or some) bookmark(s) (or all, /delete or /clear all), Raises an InvalidBookmarkException/UnknownBookmarkException
         """
-
+        output = ""
         # /delete without an argument
         if arguments is None:
             raise botexceptions.InvalidBookmark("<none>")
 
         for argument in arguments:
-            # /delete 5
-            if argument.isdigit():
-                raise botexceptions.InvalidBookmark(argument)
-            elif argument == botconfig.bookmark_all:
+
+            if argument == botconfig.bookmark_all:
                 self._config.clear_bookmarks()
-                break  # No point in going on. All bookmars are deleted.
-            else:
-                self._config.clear_bookmark(argument)
+                output = "*All bookmarks have been cleared*"
+                break  # No point in going on. All bookmarks are deleted.
+
+            try:
+                self.delete_single(argument)
+                output += "{} has been deleted\n".format(argument)
+            except botexceptions.InvalidBookmark as invalid:
+                output += "Invalid bookmark {}\n".format(argument)
+            except KeyError:
+                output += "Unknown bookmark {}\n".format(argument)
+
+        return output
+
+    def delete_single(self, bookmark_name: str):
+        """
+
+        :param bookmark_name: Name of the bookmark. Raises InvalidBookmark if illegal
+        :type bookmark_name: str
+        :return:
+        :rtype:
+        """
+
+        if not bookmark_name:
+            raise botexceptions.InvalidBookmark("<none>")
+        if bookmark_name.isdigit():
+            raise botexceptions.InvalidBookmark(bookmark_name)
+        self._config.clear_bookmark(bookmark_name)
+
 
     def deluser(self, telegram_ids):
         """
