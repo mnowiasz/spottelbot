@@ -21,12 +21,13 @@ class SpotifyController(object):
 
     def _format_track_object(self, track_object: dict):
         """
-        Formats the track object (making it human readable)
 
         :param track_object: The track object
         :type track_object: dict
         :return: Formatted string
         :rtype: str
+
+        Formats the track object (humand readable)
         """
 
         fields = (('name', ': '), ('artists', ' ('), ('album', ') '))
@@ -61,9 +62,10 @@ class SpotifyController(object):
 
         return output
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache(maxsize=last_limit)
     def _get_playlist(self, uri: str):
         """
+
         :param uri: The URI of the playlist ("spotfiy:...")
         :type uri: str
         :return: The dictonary of fields
@@ -74,6 +76,44 @@ class SpotifyController(object):
 
         playlist_object = self._client.user_playlist(self._config._spotify_username, uri, fields="name")
         return playlist_object
+
+    def get_playlist(self, uri: str) -> str:
+        """
+
+        :param uri: The URI of the playlist
+        :type uri: str
+        :return: name of the playlist
+        :rtype: str
+
+        Returns the name of the playlist (formatted string)
+        """
+
+        playlist_name = "<unknown>"
+        playlist_object = self._get_playlist(uri)
+
+        if playlist_object:
+            playlist_name = playlist_object['name']
+
+        return playlist_name
+
+    @functools.lru_cache(maxsize=last_limit)
+    def get_track(self, uri: str) -> str:
+        """
+
+        :param uri: The spotify URI for the track
+        :type uri: str
+        :return: formatted string
+        :rtype: str
+
+        Returns the track in humand readable form
+        """
+        output = "<unknown>"
+        track_object = self._client.track(uri)
+
+        if track_object:
+            output = self._format_track_object(track_object)
+
+        return output
 
     def connect(self):
         config = self._config
@@ -164,14 +204,26 @@ class SpotifyController(object):
         :return: track_id, playlist_id
         :rtype: tuple
 
-        return the recently played track (0 == the last played track before current, up to last_limit). Raises an
+        return the recently played track (1 == the last played track before current, up to last_limit). Raises an
         IndexError if index > last_limit
 
         """
 
-        play_history = self._get_last_play_history_objects(index, index)
+        if index < 1 or index > last_limit:
+            raise botexceptions.InvalidRange(index)
 
-        print(self._format_play_history_object(play_history[0]))
+        play_history = self._get_last_play_history_objects(index - 1, index - 1)
 
-        # TODO: Functionality
-        return (None, None)
+        track_id = None
+        playlist_id = None
+
+        if play_history:
+            item = play_history[0]
+            track_id = item['track']['uri']
+            context = item['context']
+            if context['type'] == 'playlist':
+                playlist_id = context['uri']
+
+        return track_id, playlist_id
+
+# TODO: String constants ('playlist', 'type')..

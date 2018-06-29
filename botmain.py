@@ -44,7 +44,7 @@ def botmain():
         exit(1)
 
     config = botconfig.BotConfig()
-    config.load_config(configfile.open())
+    config.load_config(configfile.open("r+"))
     spotify_controller = spotifycontroller.SpotifyController(config)
     spotify_controller.connect()
     telegram_controller = telegramcontroller.TelegramController(config, spotify_controller)

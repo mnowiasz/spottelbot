@@ -112,6 +112,17 @@ class TelegramController(object):
 
             return wrapper
 
+        @classmethod
+        def autosave(self, method):
+            def wrapper(self, *args, **kwargs):
+                # TODO: Autosave on/off
+
+                retval = method(self, *args, **kwargs)
+                self._config.save_config(None)
+                return retval
+
+            return wrapper
+
     def __init__(self, config: botconfig.BotConfig, spotify_controller: spotifycontroller.SpotifyController):
         """
 
@@ -130,10 +141,13 @@ class TelegramController(object):
             ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID"),
             ("help", self._help_handler, "This command"),
             ("current", self._current_handler, "Get the currently playing track"),
-            ("last", self._last_handler, "Recently played tracks")
+            ("last", self._last_handler, "Recently played tracks"),
+            (("show", "list"), self._list_handler, "Shows the bookmark(s)"),
+            (("mark", "set"), self._mark_handler, "Sets a bookmark")
         )
 
-    def _safe_send_message(self, bot: telegram.Bot, chat_id, output, split_char='\n', max_length=max_message_length):
+    def _safe_send_message(self, bot: telegram.Bot, chat_id, output, split_char='\n', max_length=max_message_length,
+                           **kwargs):
         """
         :param bot: Telegram bot
         :type bot: telegram.Bot
@@ -150,7 +164,7 @@ class TelegramController(object):
         """
 
         if len(output) < max_length:
-            bot.send_message(chat_id=chat_id, text=output)
+            bot.send_message(chat_id=chat_id, text=output, **kwargs)
         else:
             # Split the text into chunks of maximum length, and sending the chunks separately
             split_list = output.split(sep=split_char)
@@ -159,12 +173,12 @@ class TelegramController(object):
                 if len(output) + len(entry) < max_length:
                     output += split_char + entry
                 else:
-                    bot.send_message(chat_id=chat_id, text=output)
+                    bot.send_message(chat_id=chat_id, text=output, **kwargs)
                     output = entry
 
             # The remainder (if any)
             if len(output) > 0:
-                bot.send_message(chat_id=chat_id, text=output)
+                bot.send_message(chat_id=chat_id, text=output, **kwargs)
 
     def connect(self):
         """
@@ -231,21 +245,48 @@ class TelegramController(object):
             output_list = self._spotify_controller.get_last_tracks(lower, upper)
 
             for i, item in enumerate(output_list, lower):
-                output += "{}: {}".format(i, item)
+                output += "*{}*: {}".format(i, item)
                 output += "\n"
         except botexceptions.InvalidRange as range_error:
             output = "Invalid range {}. Must be between 1 and {}".format(range_error.invalid_argument,
                                                                          spotifycontroller.last_limit)
 
-        self._safe_send_message(bot, update.message.chat_id, output)
+        self._safe_send_message(bot, update.message.chat_id, output, parse_mode=telegram.ParseMode.MARKDOWN)
 
-    def mark(self, arguments: list):
+    # /list, /show
+    @Decorators.restricted
+    def _list_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        output = ""
+
+        # 1.) /list without any argument -> list all bookmarks
+        if len(args) == 0:
+            bookmark_list = self._config.get_bookmarks()
+            if bookmark_list:
+                for bookmark in bookmark_list:
+                    track_id, playlist_id = self._config.get_bookmark(bookmark)
+                    output += "*{}*: {}".format(bookmark, self._spotify_controller.get_track(track_id))
+                    if playlist_id:
+                        output += " (Playlist {})".format(self._spotify_controller.get_playlist(playlist_id))
+                    output += "\n"
+            else:
+                output = "No bookmarks found"
+
+        self._safe_send_message(bot, update.message.chat_id, output, parse_mode=telegram.ParseMode.MARKDOWN)
+
+    @Decorators.restricted
+    @Decorators.autosave
+    def _mark_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        message = self.mark(args)
+        bot.send_message(chat_id=update.message.chat_id, text=message)
+        # TODO: Exception
+
+    def mark(self, arguments: list) -> str:
         """
 
         :param arguments: Arguments to the "/mark" command
         :type arguments: list
-        :return:
-        :rtype:
+        :return: Outputsting ("Marked", "currently nothing playing")
+        :rtype: str
 
         Sets a bookmark. Raises a InvalidBookmark exception if something is wrong
         """
@@ -294,11 +335,16 @@ class TelegramController(object):
             # More than 2 arguments - /mark bookmark 5 3 4. Makes no sense
             raise botexceptions.InvalidBookmark(" ".join(arguments))
 
-        if index == bookmark_name:
-            (track_id, playlist_id) = self._spotify_controller.get_current()
+        if index == bookmark_name or index == botconfig.bookmark_current:
+            (track_id, playlist_id) = self._spotify_controller.get_current(formatted=False)
+            if not track_id:
+                return "Cannot set bookmark: Nothing playing right now"
         else:
             (track_id, playlist_id) = self._spotify_controller.get_last_index(index)
+
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
+        return "Bookmark {} set".format(bookmark_name)
+
 
     def delete(self, arguments: list):
         """

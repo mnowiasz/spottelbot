@@ -21,7 +21,7 @@ _current_id = (_random_id(), _random_id())
 _mock_tracks = [(_random_id(), _random_id()) for i in range(0, spotifycontroller.last_limit)]
 
 
-def mockget_current():
+def mockget_current(formatted=False):
     return _current_id
 
 

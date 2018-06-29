@@ -51,6 +51,7 @@ class BotConfig(object):
     _spotify_entry_client_secret = "client_secret"
     _spotify_entry_redirect_uri = "redirect_uri"
     _bookmark_section = "bookmarks"
+    _config_file = None
 
     def __init__(self):
         self._config = None
@@ -150,6 +151,7 @@ class BotConfig(object):
             else:
                 # DuplicateSectionError, DuplicateOption...
                 raise
+        self._config_file = configfile
 
     def _save_telegram(self):
         """
@@ -190,18 +192,18 @@ class BotConfig(object):
 
         if self._config.has_section(self._bookmark_section):
             self._config.remove_section(self._bookmark_section)
-            self._config.add_section(self._bookmark_section)
-            for bookmark in self.get_bookmarks():
-                track_id, playlist_id = self.get_bookmark(bookmark)
-                if playlist_id is None:
-                    self._config[self._bookmark_section][bookmark] = track_id
-                else:
-                    self._config[self._bookmark_section][bookmark] = track_id + "," + playlist_id
+        self._config.add_section(self._bookmark_section)
+        for bookmark in self.get_bookmarks():
+            track_id, playlist_id = self.get_bookmark(bookmark)
+            if playlist_id is None:
+                self._config[self._bookmark_section][bookmark] = track_id
+            else:
+                self._config[self._bookmark_section][bookmark] = track_id + "," + playlist_id
 
     def save_config(self, configfile):
         """
 
-        :param configfile: The file like object to write the config into
+        :param configfile: The file like object to write the config into. If None, the last file (loaded/saved) will be used
         :type configfile: File
         :return:
         :rtype:
@@ -209,11 +211,19 @@ class BotConfig(object):
         Write the config into the specified configfile
         """
 
+        the_file = configfile
+
+        if not configfile:
+            the_file = self._config_file
+
+        the_file.seek(0)
         self._save_telegram()
         self._save_spotify()
         self._save_bookmarks()
-        self._config.write(configfile)
-        configfile.seek(0)
+        self._config.write(the_file)
+        the_file.truncate()
+        the_file.seek(0)
+
 
     def has_access(self, telegram_id: str) -> bool:
         """
