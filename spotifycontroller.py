@@ -19,22 +19,21 @@ class SpotifyController(object):
         self._token = None
         self._client = None
 
-    def _format_play_history_object(self, play_history_object: dict):
+    def _format_track_object(self, track_object: dict):
         """
+        Formats the track object (making it human readable)
 
-        :param play_history_object: The PHO in question
-        :type play_history_object: dict
+        :param track_object: The track object
+        :type track_object: dict
         :return: Formatted string
         :rtype: str
-
-        Formats the PHO so it's human readable
         """
 
         fields = (('name', ': '), ('artists', ' ('), ('album', ') '))
 
         output = ""
         for field, seperator in fields:
-            the_item = play_history_object['track'][field]
+            the_item = track_object[field]
             if isinstance(the_item, list):
                 for subitem in the_item:
                     output += subitem['name'] + seperator
@@ -43,14 +42,22 @@ class SpotifyController(object):
             else:
                 output += the_item + seperator
 
-        # If it's part of a playlist, display the playlist. If not, display the album
-        context = play_history_object['context']
-        if context['type'] == 'playlist':
-            playlist_uri = context['uri']
+        return output
+
+    def _format_context_object(self, context_object: dict):
+        """
+
+        :param context_object: The context object
+        :type context_object: dict
+        :return: Formatted string
+        :rtype: str
+        """
+        output = None
+
+        if context_object['type'] == 'playlist':
+            playlist_uri = context_object['uri']
             playlist_dict = self._get_playlist(playlist_uri)
-            output += "Playlist " + playlist_dict['name']
-        elif context['type'] == 'album':
-            output += "Album " + play_history_object['track']['album']['name']
+            output = " (Playlist: {}) ".format(playlist_dict['name'])
 
         return output
 
@@ -77,19 +84,40 @@ class SpotifyController(object):
 
         self._client = cl.Spotify(auth=self._token)
 
-    def get_current(self):
+    def get_current(self, formatted=True):
         """
-
-        :return: tuple of track_id and playlist_id
+        :param formatted: If true, returns a string. If false,returns a tuple of spotify ids
+        :return: tuple of track_id and playlist_id (formatted = false) or string (formatted=true)
         :rtype: tuple
 
         Returns the currently playing song (if any).
         """
 
-        track = self._client.current_user_playing_track()
+        currently_playing_object = self._client.current_user_playing_track()
 
-        return (None, None)
-        # TODO: Functionality
+        if formatted:
+            ret_object = None
+        else:
+            ret_object = (None, None)
+
+        if currently_playing_object:
+            the_item = currently_playing_object.get('item')
+            the_context = currently_playing_object.get('context')
+            if the_item:
+                if formatted:
+                    output = self._format_track_object(the_item)
+                    if the_context:
+                        output += self._format_context_object(the_context)
+                    ret_object = output
+                else:
+                    context_id = None
+                    if the_context:
+                        if the_context['type'] == 'playlist':
+                            context_id = the_context['uri']
+                    track_id = the_item['uri']
+                    ret_object = (track_id, context_id)
+
+        return ret_object
 
     def _get_last_play_history_objects(self, lower: int, upper: int):
         """
@@ -123,7 +151,8 @@ class SpotifyController(object):
         pho_list = self._get_last_play_history_objects(lower - 1, upper - 1)
 
         for play_history_object in pho_list:
-            output_list.append(self._format_play_history_object(play_history_object))
+            output_list.append(self._format_track_object(play_history_object['track']) + self._format_context_object(
+                play_history_object['context']))
 
         return output_list
 

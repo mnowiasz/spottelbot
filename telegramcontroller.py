@@ -10,6 +10,8 @@ import botconfig
 import botexceptions
 import spotifycontroller
 
+max_message_length = 4096
+
 
 def __parse_last_arg(parse_string):
     """
@@ -131,6 +133,39 @@ class TelegramController(object):
             ("last", self._last_handler, "Recently played tracks")
         )
 
+    def _safe_send_message(self, bot: telegram.Bot, chat_id, output, split_char='\n', max_length=max_message_length):
+        """
+        :param bot: Telegram bot
+        :type bot: telegram.Bot
+        :param chat_id: The chat ID
+        :type chat_id: str
+        :param output: The string to send
+        :type output: str
+        :param max_length: Max size of message
+        :type max_length: int
+        :return:
+        :rtype:
+
+        Safely send a message which might exceed telegram's message length (currently 4096).
+        """
+
+        if len(output) < max_length:
+            bot.send_message(chat_id=chat_id, text=output)
+        else:
+            # Split the text into chunks of maximum length, and sending the chunks separately
+            split_list = output.split(sep=split_char)
+            output = ""
+            for entry in split_list:
+                if len(output) + len(entry) < max_length:
+                    output += split_char + entry
+                else:
+                    bot.send_message(chat_id=chat_id, text=output)
+                    output = entry
+
+            # The remainder (if any)
+            if len(output) > 0:
+                bot.send_message(chat_id=chat_id, text=output)
+
     def connect(self):
         """
 
@@ -179,9 +214,11 @@ class TelegramController(object):
         bot.send_message(chat_id=update.message.chat_id, text="Help!")
 
     def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        self._spotify_controller.get_current()
-        bot.send_message(chat_id=update.message.chat_id, text="Current")
-        # TODO: Functionality
+        message = self._spotify_controller.get_current()
+        if not message:
+            message = "Nothing playing at the moment"
+
+        bot.send_message(chat_id=update.message.chat_id, text=message)
 
     # /last
     @Decorators.restricted
@@ -200,7 +237,7 @@ class TelegramController(object):
             output = "Invalid range {}. Must be between 1 and {}".format(range_error.invalid_argument,
                                                                          spotifycontroller.last_limit)
 
-        bot.send_message(chat_id=update.message.chat_id, text=output)
+        self._safe_send_message(bot, update.message.chat_id, output)
 
     def mark(self, arguments: list):
         """
