@@ -52,7 +52,6 @@ class SpotifyController(object):
         elif context['type'] == 'album':
             output += "Album " + play_history_object['track']['album']['name']
 
-
         return output
 
     @functools.lru_cache(maxsize=128)

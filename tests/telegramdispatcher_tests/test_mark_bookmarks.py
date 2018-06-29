@@ -10,6 +10,8 @@ import spotifycontroller
 import telegramcontroller
 
 """ Mock track ids"""
+
+
 def _random_id():
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=16))
 
@@ -28,6 +30,7 @@ def mockget_last_index(last_id):
         return mockget_current()
     else:
         return _mock_tracks[last_id]
+
 
 # /mark without any parameter
 def test_mark_current(monkeypatch):

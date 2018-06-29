@@ -82,7 +82,6 @@ class TestBookmarksSanitzied(object):
         title, playlist = self._test_config.get_bookmark(name)
         assert (name, self._test_playlist) == (name, playlist)
 
-
     @pytest.mark.parametrize("name, sanitized", _test_data)
     def test_clear_sanitzied_names(self, name, sanitized):
         self._test_config.clear_bookmark(name)

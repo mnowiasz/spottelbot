@@ -46,6 +46,8 @@ def test_spotify_client_secret():
 def test_spotify_redirect_uri():
     _config.load_config(open(_config_file_valid))
     assert "http://localhost/xyz" == _config._spotify_redirect_uri
+
+
 class TestAccessConfig(object):
     _test_data = (
         ("12354", True),
