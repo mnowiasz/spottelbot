@@ -30,7 +30,7 @@ class SpotifyController(object):
         Formats the PHO so it's human readable
         """
 
-        fields = (('name', ': '), ('artists', ' ('))
+        fields = (('name', ': '), ('artists', ' ('), ('album', ') '))
 
         output = ""
         for field, seperator in fields:
@@ -49,10 +49,9 @@ class SpotifyController(object):
             playlist_uri = context['uri']
             playlist_dict = self._get_playlist(playlist_uri)
             output += "Playlist " + playlist_dict['name']
-        else:
+        elif context['type'] == 'album':
             output += "Album " + play_history_object['track']['album']['name']
 
-        output += ")"
 
         return output
 
