@@ -139,14 +139,31 @@ class TelegramController(object):
 
         # Command(s), handler, Helptext (short), Helptext(list) long
         self._handlers = (
-            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)", None),
-            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID", None),
-            ("help", self._help_handler, "This command", None),
-            ("current", self._current_handler, "Get the currently playing track", None),
-            ("last", self._last_handler, "Recently played tracks", None),
-            (("show", "list"), self._list_handler, "Shows the bookmark(s)", None),
-            (("mark", "set"), self._mark_handler, "Sets a bookmark", None),
-            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)", None)
+            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)", (
+                "Shuts down the bot. After shutdown you have to start the again via CLI",
+                "*Note:* This command may take a couple of seconds before the bot process finally finishes")),
+            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID", (
+                "Returns the username and it's numeric ID to the caller",
+                "Useful when you get an 'Access denied' and have a look at he access rules")),
+            ("help", self._help_handler, "This command", ("*/help:* Show all available commands",
+                                                          "*/help <command>*: Gives detailed help for the commad in question")),
+            ("current", self._current_handler, "Get the currently playing track", (
+                "Shows the currenty playing track, if any.",
+                "*Note:* There has to a tracking playing for this to work!",
+                "A track stopped at the beginning won't show up")),
+            ("last", self._last_handler, "Recently played tracks", (
+                "*last* without any parameter will get the last 50 tracks", "*/last 5* shows the last 5 tracks",
+                "*last 4-10* shows you track 4 to 10")),
+            (("show", "list"), self._list_handler, "Shows the bookmark(s)",
+             ("/list without any parameter lists all bookmarks", "/show <bookmarkname> shows you the <bookmarkname>")),
+            (("mark", "set"), self._mark_handler, "Sets a bookmark", (
+                "*/mark* without any parameter will set the special bookmark 'current' to the currently playing song (if any)",
+                "*/mark 5* sets the special bookmark 'current' to the 5th played track",
+                "*/mark mybookmark 6* sets the bookmark 'mybookmark' to the 6th recently played track",
+                "*Note*: boomarks will be transformed to lower case, so 'BookMark' and 'bookmark' are the same")),
+            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)", (
+                "*/clear <bookmarkname>* deletes the bookmark", "*/clear a b c* deletes bookmarks a, b and c",
+                "*/clear all* clears all bookmarks"))
         )
 
     def _send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
@@ -186,6 +203,7 @@ class TelegramController(object):
         # There's no case final is set and there's an empty buffer: If buffer is full, buffer contains the
         # message containing the potential overflow.
         if final:
+            print(self._output_buffer)
             bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
             self._output_buffer = ""
 
@@ -270,6 +288,7 @@ class TelegramController(object):
         threading.Thread(target=self._quit).start()
 
     # /help, /help add, ...
+    @Decorators.restricted
     def _help_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
         # /help without an argument -> List all commands and the quick help
@@ -296,10 +315,10 @@ class TelegramController(object):
                                               parse_mode=telegram.ParseMode.MARKDOWN)
                     if isinstance(help, collections.Iterable) and not isinstance(help, str):
                         for help_line in help:
-                            self._send_message_buffer(bot, update.message.chat_id, text=help_line, final=False,
+                            self._send_message_buffer(bot, update.message.chat_id, text=help_line + "\n", final=False,
                                                       parse_mode=telegram.ParseMode.MARKDOWN)
                     else:
-                        self._send_message_buffer(bot, update.message.chat_id, text=help, final=False,
+                        self._send_message_buffer(bot, update.message.chat_id, text=help + "\n", final=False,
                                                   parse_mode=telegram.ParseMode.MARKDOWN)
                 else:
                     # Unknown command
