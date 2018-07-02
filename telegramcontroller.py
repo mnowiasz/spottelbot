@@ -385,7 +385,7 @@ class TelegramController(object):
         try:
             message = self.mark(args)
         except botexceptions.InvalidBookmark as invalid:
-            message = "*Invalid bookmark/argument: {}".format(invalid.invalid_bookmark)
+            message = "*Invalid bookmark(s)/argument(s): {}*".format(invalid.invalid_bookmark)
 
         bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
@@ -465,7 +465,7 @@ class TelegramController(object):
             (track_id, playlist_id) = self._spotify_controller.get_last_index(index)
 
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
-        return "Bookmark {} set".format(bookmark_name)
+        return "Bookmark *{}* set".format(bookmark_name)
 
     def delete(self, arguments: list) -> list:
         """
@@ -492,7 +492,7 @@ class TelegramController(object):
 
             try:
                 self.delete_single(argument)
-                output_list.append("{} has been deleted\n".format(argument))
+                output_list.append("Bookmark *{}* has been deleted\n".format(argument))
             except botexceptions.InvalidBookmark as invalid:
                 output_list.append("Invalid bookmark {}\n".format(argument))
             except KeyError:
