@@ -1,5 +1,6 @@
 """ Processing/relaying telegram messages"""
 import collections
+import functools
 import threading
 
 import telegram
@@ -136,16 +137,16 @@ class TelegramController(object):
         self._updater = None
         self._output_buffer = ""
 
-        # Command(s), handler, Helptext
+        # Command(s), handler, Helptext (short), Helptext(list) long
         self._handlers = (
-            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)"),
-            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID"),
-            ("help", self._help_handler, "This command"),
-            ("current", self._current_handler, "Get the currently playing track"),
-            ("last", self._last_handler, "Recently played tracks"),
-            (("show", "list"), self._list_handler, "Shows the bookmark(s)"),
-            (("mark", "set"), self._mark_handler, "Sets a bookmark"),
-            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)")
+            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)", None),
+            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID", None),
+            ("help", self._help_handler, "This command", None),
+            ("current", self._current_handler, "Get the currently playing track", None),
+            ("last", self._last_handler, "Recently played tracks", None),
+            (("show", "list"), self._list_handler, "Shows the bookmark(s)", None),
+            (("mark", "set"), self._mark_handler, "Sets a bookmark", None),
+            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)", None)
         )
 
     def _send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
@@ -187,6 +188,42 @@ class TelegramController(object):
         if final:
             bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
             self._output_buffer = ""
+
+    @functools.lru_cache(maxsize=20)
+    def _find_help_for_command(self, command: str):
+        """
+
+        :param command: The command in question
+        :type command: str
+        :return: tuple of help (each entry one line), string (quick help) or none if command not found
+        :rtype:  tuple or str
+
+        Find the corresponding help text for the command, or None if unknown command
+        """
+
+        found = False
+        quick_help = None
+        verbose_help = None
+        for entry in self._handlers:
+            command_s = entry[0]
+            quick_help = entry[2]
+            verbose_help = entry[3]
+            if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
+                if command in command_s:
+                    found = True
+                    break
+            else:
+                if command == command_s:
+                    found = True
+                    break;
+
+        if not found:
+            return None
+
+        if verbose_help:
+            return verbose_help
+        else:
+            return quick_help + "\n"
 
     def connect(self):
         """
@@ -232,8 +269,45 @@ class TelegramController(object):
         bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
         threading.Thread(target=self._quit).start()
 
+    # /help, /help add, ...
     def _help_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        bot.send_message(chat_id=update.message.chat_id, text="Help!")
+
+        # /help without an argument -> List all commands and the quick help
+        if len(args) == 0:
+            for entry in self._handlers:
+                text = "*"
+                command_s = entry[0]
+                quick_help = entry[2]
+                if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
+                    text += ", ".join(command_s)
+                else:
+                    text += command_s
+                text += "*: {}\n".format(quick_help)
+                self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                          parse_mode=telegram.ParseMode.MARKDOWN)
+            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                      parse_mode=telegram.ParseMode.MARKDOWN)
+        else:
+            # /help help, /help clear, /help mark clear...
+            for arg in args:
+                help = self._find_help_for_command(arg)
+                if help:
+                    self._send_message_buffer(bot, update.message.chat_id, text="*{}*: ".format(arg), final=False,
+                                              parse_mode=telegram.ParseMode.MARKDOWN)
+                    if isinstance(help, collections.Iterable) and not isinstance(help, str):
+                        for help_line in help:
+                            self._send_message_buffer(bot, update.message.chat_id, text=help_line, final=False,
+                                                      parse_mode=telegram.ParseMode.MARKDOWN)
+                    else:
+                        self._send_message_buffer(bot, update.message.chat_id, text=help, final=False,
+                                                  parse_mode=telegram.ParseMode.MARKDOWN)
+                else:
+                    # Unknown command
+                    self._send_message_buffer(bot, update.message.chat_id, text="*{}: Unknown command*\n".format(arg),
+                                              final=False, parse_mode=telegram.ParseMode.MARKDOWN)
+            # Empty Buffer
+            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                      parse_mode=telegram.ParseMode.MARKDOWN)
 
     def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         message = self._spotify_controller.get_current()
@@ -279,32 +353,35 @@ class TelegramController(object):
                     text += "\n"
                     self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
                                               parse_mode=telegram.ParseMode.MARKDOWN)
-                self._send_message_buffer(bot, update.message.chat_id, text=text, final=True,
+                self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
                                           parse_mode=telegram.ParseMode.MARKDOWN)
             else:
-                self._send_message_buffer(bot, update.message.chat_id, text="Not bookmars found", final=True,
+                self._send_message_buffer(bot, update.message.chat_id, text="Not bookmarks found", final=True,
                                           parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /mark, /set..
     @Decorators.restricted
     @Decorators.autosave
     def _mark_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        message = self.mark(args)
-        bot.send_message(chat_id=update.message.chat_id, text=message)
-        # TODO: Exception
+        try:
+            message = self.mark(args)
+        except botexceptions.InvalidBookmark as invalid:
+            message = "*Invalid bookmark/argument: {}".format(invalid.invalid_bookmark)
+
+        bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /clear, /delete...
     @Decorators.restricted
     @Decorators.autosave
     def _clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
-        message = ""
-        try:
-            message = self.delete(args)
-        except botexceptions.InvalidBookmark as invalid:
-            message = "Invalid bookmark name {}".format(invalid.invalid_bookmark)
+        message_list = self.delete(args)
 
-        bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
+        for message in message_list:
+            self._send_message_buffer(bot, update.message.chat_id, text=message, final=False,
+                                      parse_mode=telegram.ParseMode.MARKDOWN)
+        self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                  parse_mode=telegram.ParseMode.MARKDOWN)
 
     def mark(self, arguments: list) -> str:
         """
@@ -371,37 +448,38 @@ class TelegramController(object):
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
         return "Bookmark {} set".format(bookmark_name)
 
-    def delete(self, arguments: list) -> str:
+    def delete(self, arguments: list) -> list:
         """
 
         :param arguments: The arguments given to the "/delete" command
         :type arguments: list
-        :return: output of command
-        :rtype: str
+        :return: list of output lines
+        :rtype: list
 
         Deletes a (or some) bookmark(s) (or all, /delete or /clear all), Raises an InvalidBookmarkException/UnknownBookmarkException
         """
-        output = ""
+
         # /delete without an argument
         if arguments is None:
             raise botexceptions.InvalidBookmark("<none>")
+        output_list = []
 
         for argument in arguments:
 
             if argument == botconfig.bookmark_all:
                 self._config.clear_bookmarks()
-                output = "*All bookmarks have been cleared*"
+                output_list = ["*All bookmarks have been cleared*"]
                 break  # No point in going on. All bookmarks are deleted.
 
             try:
                 self.delete_single(argument)
-                output += "{} has been deleted\n".format(argument)
+                output_list.append("{} has been deleted\n".format(argument))
             except botexceptions.InvalidBookmark as invalid:
-                output += "Invalid bookmark {}\n".format(argument)
+                output_list.append("Invalid bookmark {}\n".format(argument))
             except KeyError:
-                output += "Unknown bookmark {}\n".format(argument)
+                output_list.append("Unknown bookmark {}\n".format(argument))
 
-        return output
+        return output_list
 
     def delete_single(self, bookmark_name: str):
         """
