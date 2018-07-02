@@ -49,3 +49,10 @@ class InvalidRange(Exception):
 # Unable to connect to spotify
 class SpotifyAuth(Exception):
     pass
+
+
+# Max message length
+
+class TelegramMessageLength(Exception):
+    def __init__(self, length=0):
+        self.invalid_length = length

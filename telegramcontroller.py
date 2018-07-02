@@ -134,6 +134,7 @@ class TelegramController(object):
         self._config = config
         self._spotify_controller = spotify_controller
         self._updater = None
+        self._output_buffer = ""
 
         # Command(s), handler, Helptext
         self._handlers = (
@@ -144,42 +145,48 @@ class TelegramController(object):
             ("last", self._last_handler, "Recently played tracks"),
             (("show", "list"), self._list_handler, "Shows the bookmark(s)"),
             (("mark", "set"), self._mark_handler, "Sets a bookmark"),
-            (("clear", "delete"), self._clear_handler, "Deletes a bookmark (or all)")
+            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)")
         )
 
-    def _safe_send_message(self, bot: telegram.Bot, chat_id, output, split_char='\n', max_length=max_message_length,
-                           **kwargs):
+    def _send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
         """
+
         :param bot: Telegram bot
         :type bot: telegram.Bot
-        :param chat_id: The chat ID
+        :param chat_id: Chat ID to send the messages to
         :type chat_id: str
-        :param output: The string to send
-        :type output: str
-        :param max_length: Max size of message
-        :type max_length: int
+        :param text: The text to send
+        :type text: str
+        :param final: Last part of the message, i.e. flush the buffer?
+        :type final: bool
+        :param kwargs: args to pass to bot.send_message()
+        :type kwargs:
         :return:
         :rtype:
 
-        Safely send a message which might exceed telegram's message length (currently 4096).
+        Sends a bunch of message lines to the chat_id, honoring telegram's max message length. If a single line
+        (text) should exceed the maximum message length, an exception will be raised
         """
 
-        if len(output) < max_length:
-            bot.send_message(chat_id=chat_id, text=output, **kwargs)
-        else:
-            # Split the text into chunks of maximum length, and sending the chunks separately
-            split_list = output.split(sep=split_char)
-            output = ""
-            for entry in split_list:
-                if len(output) + len(entry) < max_length:
-                    output += split_char + entry
-                else:
-                    bot.send_message(chat_id=chat_id, text=output, **kwargs)
-                    output = entry
+        # Not sure if there should be a seperate buffer for eatch chat_id.. i.e. is this method thread safe? Does
+        # it need to be? For know there won't be buffers per chat_id, only one single, global one.
 
-            # The remainder (if any)
-            if len(output) > 0:
-                bot.send_message(chat_id=chat_id, text=output, **kwargs)
+        message_length = len(text)
+
+        if message_length >= max_message_length:
+            raise botexceptions.TelegramMessageLength(message_length)
+
+        if len(self._output_buffer) + message_length >= max_message_length:
+            bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
+            self._output_buffer = text
+        else:
+            self._output_buffer += text
+
+        # There's no case final is set and there's an empty buffer: If buffer is full, buffer contains the
+        # message containing the potential overflow.
+        if final:
+            bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
+            self._output_buffer = ""
 
     def connect(self):
         """
@@ -246,33 +253,37 @@ class TelegramController(object):
             output_list = self._spotify_controller.get_last_tracks(lower, upper)
 
             for i, item in enumerate(output_list, lower):
-                output += "*{}*: {}".format(i, item)
-                output += "\n"
+                text = "*{}*: {}\n".format(i, item)
+                self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                          parse_mode=telegram.ParseMode.MARKDOWN)
+            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                      parse_mode=telegram.ParseMode.MARKDOWN)
         except botexceptions.InvalidRange as range_error:
             output = "Invalid range {}. Must be between 1 and {}".format(range_error.invalid_argument,
                                                                          spotifycontroller.last_limit)
 
-        self._safe_send_message(bot, update.message.chat_id, output, parse_mode=telegram.ParseMode.MARKDOWN)
-
     # /list, /show
     @Decorators.restricted
     def _list_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        output = ""
 
         # 1.) /list without any argument -> list all bookmarks
         if len(args) == 0:
             bookmark_list = self._config.get_bookmarks()
             if bookmark_list:
+                text = ""
                 for bookmark in bookmark_list:
                     track_id, playlist_id = self._config.get_bookmark(bookmark)
-                    output += "*{}*: {}".format(bookmark, self._spotify_controller.get_track(track_id))
+                    text = "*{}*: {}".format(bookmark, self._spotify_controller.get_track(track_id))
                     if playlist_id:
-                        output += " (Playlist {})".format(self._spotify_controller.get_playlist(playlist_id))
-                    output += "\n"
+                        text += " (Playlist {})".format(self._spotify_controller.get_playlist(playlist_id))
+                    text += "\n"
+                    self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                              parse_mode=telegram.ParseMode.MARKDOWN)
+                self._send_message_buffer(bot, update.message.chat_id, text=text, final=True,
+                                          parse_mode=telegram.ParseMode.MARKDOWN)
             else:
-                output = "No bookmarks found"
-
-        self._safe_send_message(bot, update.message.chat_id, output, parse_mode=telegram.ParseMode.MARKDOWN)
+                self._send_message_buffer(bot, update.message.chat_id, text="Not bookmars found", final=True,
+                                          parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /mark, /set..
     @Decorators.restricted
@@ -406,7 +417,6 @@ class TelegramController(object):
         if bookmark_name.isdigit():
             raise botexceptions.InvalidBookmark(bookmark_name)
         self._config.clear_bookmark(bookmark_name)
-
 
     def deluser(self, telegram_ids):
         """
