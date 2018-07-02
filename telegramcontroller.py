@@ -203,7 +203,6 @@ class TelegramController(object):
         # There's no case final is set and there's an empty buffer: If buffer is full, buffer contains the
         # message containing the potential overflow.
         if final:
-            print(self._output_buffer)
             bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
             self._output_buffer = ""
 
@@ -267,7 +266,8 @@ class TelegramController(object):
         self._updater.start_polling()
 
     def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
-        bot.send_message(chat_id=update.message.chat_id, text="You are not authorized to use this function")
+        bot.send_message(chat_id=update.message.chat_id, text="*You are not authorized to use this function*",
+                         parse_mode=telegram.ParseMode.MARKDOWN)
 
     # "/whoami"
     def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):

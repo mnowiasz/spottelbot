@@ -11,6 +11,17 @@ last_limit = 50
 
 scope = 'user-read-recently-played user-read-currently-playing playlist-read-private'
 
+# Some constants
+album_str = "album"
+artists_str = "artists"
+item_str = "item"
+context_str = "context"
+name_str = "name"
+playlist_str = "playlist"
+track_str = "track"
+type_str = "type"
+uri_str = "uri"
+
 
 class SpotifyController(object):
 
@@ -30,16 +41,16 @@ class SpotifyController(object):
         Formats the track object (humand readable)
         """
 
-        fields = (('name', ': '), ('artists', ' ('), ('album', ') '))
+        fields = ((name_str, ': '), (artists_str, ' ('), (album_str, ') '))
 
         output = ""
         for field, seperator in fields:
             the_item = track_object[field]
             if isinstance(the_item, list):
                 for subitem in the_item:
-                    output += subitem['name'] + seperator
+                    output += subitem[name_str] + seperator
             elif isinstance(the_item, dict):
-                output += the_item['name'] + seperator
+                output += the_item[name_str] + seperator
             else:
                 output += the_item + seperator
 
@@ -55,10 +66,10 @@ class SpotifyController(object):
         """
         output = None
 
-        if context_object['type'] == 'playlist':
-            playlist_uri = context_object['uri']
+        if context_object[type_str] == playlist_str:
+            playlist_uri = context_object[uri_str]
             playlist_dict = self._get_playlist(playlist_uri)
-            output = " (Playlist: {}) ".format(playlist_dict['name'])
+            output = " (Playlist: {}) ".format(playlist_dict[name_str])
 
         return output
 
@@ -73,8 +84,7 @@ class SpotifyController(object):
 
         Gets the playlist details (formatting it)
         """
-
-        playlist_object = self._client.user_playlist(self._config._spotify_username, uri, fields="name")
+        playlist_object = self._client.user_playlist(self._config._spotify_username, uri, fields=name_str)
         return playlist_object
 
     def get_playlist(self, uri: str) -> str:
@@ -89,10 +99,11 @@ class SpotifyController(object):
         """
 
         playlist_name = "<unknown>"
+
         playlist_object = self._get_playlist(uri)
 
         if playlist_object:
-            playlist_name = playlist_object['name']
+            playlist_name = playlist_object[name_str]
 
         return playlist_name
 
@@ -141,8 +152,8 @@ class SpotifyController(object):
             ret_object = (None, None)
 
         if currently_playing_object:
-            the_item = currently_playing_object.get('item')
-            the_context = currently_playing_object.get('context')
+            the_item = currently_playing_object.get(item_str)
+            the_context = currently_playing_object.get(context_str)
             if the_item:
                 if formatted:
                     output = self._format_track_object(the_item)
@@ -152,9 +163,9 @@ class SpotifyController(object):
                 else:
                     context_id = None
                     if the_context:
-                        if the_context['type'] == 'playlist':
-                            context_id = the_context['uri']
-                    track_id = the_item['uri']
+                        if the_context[type_str] == playlist_str:
+                            context_id = the_context[uri_str]
+                    track_id = the_item[uri_str]
                     ret_object = (track_id, context_id)
 
         return ret_object
@@ -171,7 +182,6 @@ class SpotifyController(object):
 
         Returns the list of tracks defined by lower and upper index
         """
-
         return self._client.current_user_recently_played(upper + 1)["items"][lower:upper + 1]
 
     def get_last_tracks(self, lower: int, upper: int):
@@ -186,13 +196,12 @@ class SpotifyController(object):
 
         Returns a list of formatted strings containing the recently played tracks
         """
-
         output_list = []
         pho_list = self._get_last_play_history_objects(lower - 1, upper - 1)
 
         for play_history_object in pho_list:
-            output_list.append(self._format_track_object(play_history_object['track']) + self._format_context_object(
-                play_history_object['context']))
+            output_list.append(self._format_track_object(play_history_object[track_str]) + self._format_context_object(
+                play_history_object[context_str]))
 
         return output_list
 
@@ -219,11 +228,9 @@ class SpotifyController(object):
 
         if play_history:
             item = play_history[0]
-            track_id = item['track']['uri']
-            context = item['context']
-            if context['type'] == 'playlist':
-                playlist_id = context['uri']
+            track_id = item[track_str][uri_str]
+            context = item[context_str]
+            if context[type_str] == playlist_str:
+                playlist_id = context[uri_str]
 
         return track_id, playlist_id
-
-# TODO: String constants ('playlist', 'type')..
