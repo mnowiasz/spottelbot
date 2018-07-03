@@ -350,8 +350,6 @@ class TelegramController(object):
     @Decorators.restricted
     def _last_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
-        output = ""
-
         try:
             lower, upper = last_range(args)
             output_list = self._spotify_controller.get_last_tracks(lower, upper)
@@ -363,8 +361,10 @@ class TelegramController(object):
             self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
                                       parse_mode=telegram.ParseMode.MARKDOWN)
         except botexceptions.InvalidRange as range_error:
-            output = "Invalid range {}. Must be between 1 and {}".format(range_error.invalid_argument,
-                                                                         spotifycontroller.last_limit)
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="*Invalid range {}. Must be between 1 and {}*".format(range_error.invalid_argument,
+                                                                                        spotifycontroller.last_limit),
+                             parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /list, /show
     @Decorators.restricted
