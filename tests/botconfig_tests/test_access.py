@@ -1,6 +1,6 @@
 import pytest
 
-import botexceptions
+from spottelbot import botexceptions
 from tests.testdata import TestAccessData
 
 

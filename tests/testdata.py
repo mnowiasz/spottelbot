@@ -2,8 +2,7 @@
 
 import pytest
 
-import botconfig
-import telegramcontroller
+from spottelbot import telegramcontroller, botconfig
 
 
 # Test data for access

@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-import botconfig
+from spottelbot import botconfig
 
 
 class TestConfigWrite(object):

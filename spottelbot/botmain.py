@@ -4,10 +4,10 @@ import logging
 import sys
 from pathlib import Path
 
-import botconfig
-import botexceptions
-import spotifycontroller
-import telegramcontroller
+from spottelbot import botconfig
+from spottelbot import botexceptions
+from spottelbot import spotifycontroller
+from spottelbot import telegramcontroller
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -15,7 +15,6 @@ _config_locations = ("spottelbot.config", "spottelbot/config", ".spottelbot/conf
 
 
 def botmain():
-
     # Which configfile to use? If a parameter is given, this should be the configfile. If not, look for it at
     # several locations
 

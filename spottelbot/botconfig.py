@@ -2,7 +2,7 @@
 
 import configparser
 
-import botexceptions
+from spottelbot import botexceptions
 
 # Both a bookmark name and a value (Currently playing)
 bookmark_current = "current"

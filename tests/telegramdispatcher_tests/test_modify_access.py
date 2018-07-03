@@ -2,9 +2,7 @@
 
 import pytest
 
-import botconfig
-import botexceptions
-import telegramcontroller
+from spottelbot import botexceptions, telegramcontroller, botconfig
 from tests.testdata import TestAccessData
 
 

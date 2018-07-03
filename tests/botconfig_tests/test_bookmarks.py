@@ -1,7 +1,6 @@
 import pytest
 
-import botconfig
-import botexceptions
+from spottelbot import botexceptions, botconfig
 from tests.testdata import TestBookmarkData
 
 

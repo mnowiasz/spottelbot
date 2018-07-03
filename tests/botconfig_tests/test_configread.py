@@ -3,8 +3,7 @@ import os
 
 import pytest
 
-import botconfig
-import botexceptions
+from spottelbot import botexceptions, botconfig
 
 _config_path = os.path.dirname(os.path.realpath(__file__))
 _config_file_valid = os.path.join(_config_path, "valid.config")

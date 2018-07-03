@@ -2,10 +2,10 @@
 
 import functools
 
-import botconfig
-import botexceptions
 import spotipy.spotipy.client as cl
 import spotipy.spotipy.util as util
+from spottelbot import botconfig
+from spottelbot import botexceptions
 
 # Theoretically it's possible to have mor than 50 last items by using the "next" feature. But since 50 entries
 # makes quite a list (especially when using the mobile telegram client), this limit shouldn't bother anyone - it's

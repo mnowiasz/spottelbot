@@ -1,8 +1,6 @@
 import pytest
 
-import botexceptions
-import spotifycontroller
-import telegramcontroller
+from spottelbot import botexceptions, telegramcontroller, spotifycontroller
 
 
 # Test the argument of /last

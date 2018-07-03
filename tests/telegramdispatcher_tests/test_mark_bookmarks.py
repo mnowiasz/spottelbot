@@ -4,10 +4,7 @@ import string
 
 import pytest
 
-import botconfig
-import botexceptions
-import spotifycontroller
-import telegramcontroller
+from spottelbot import botexceptions, telegramcontroller, botconfig, spotifycontroller
 
 """ Mock track ids"""
 

@@ -7,9 +7,9 @@ import telegram
 import telegram.bot
 import telegram.ext
 
-import botconfig
-import botexceptions
-import spotifycontroller
+from spottelbot import botconfig
+from spottelbot import botexceptions
+from spottelbot import spotifycontroller
 
 max_message_length = 4096
 
@@ -373,7 +373,6 @@ class TelegramController(object):
         # 1.) /list without any argument -> list all bookmarks
         if len(args) == 0:
             bookmark_list = self._config.get_bookmarks()
-            print(bookmark_list)
             if bookmark_list:
                 text = ""
                 for bookmark in bookmark_list:
