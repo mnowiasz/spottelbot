@@ -1,9 +1,11 @@
 """ The Main file"""
+import configparser
 import logging
 import sys
 from pathlib import Path
 
 import botconfig
+import botexceptions
 import spotifycontroller
 import telegramcontroller
 
@@ -13,6 +15,7 @@ _config_locations = ("spottelbot.config", "spottelbot/config", ".spottelbot/conf
 
 
 def botmain():
+
     # Which configfile to use? If a parameter is given, this should be the configfile. If not, look for it at
     # several locations
 
@@ -23,7 +26,7 @@ def botmain():
     if len(sys.argv) == 2:
         configfile = Path(sys.argv[1])
     else:
-        # Currentdirectory and $HOME
+        # Current directory and $HOME
         for path in (Path.cwd(), Path.home()):
             for location in _config_locations:
                 configfile = (Path(path) / location).resolve()
@@ -42,15 +45,35 @@ def botmain():
     if not configfile:
         print("Unable to find configfile!")
         exit(1)
-
-    config = botconfig.BotConfig()
-    config.load_config(configfile.open("r+"))
-    spotify_controller = spotifycontroller.SpotifyController(config)
-    spotify_controller.connect()
-    telegram_controller = telegramcontroller.TelegramController(config, spotify_controller)
-    telegram_controller.connect()
-
-    # TODO: Exceptions
+    try:
+        config = botconfig.BotConfig()
+        config.load_config(configfile.open("r+"))
+        spotify_controller = spotifycontroller.SpotifyController(config)
+        spotify_controller.connect()
+        telegram_controller = telegramcontroller.TelegramController(config, spotify_controller)
+        telegram_controller.connect()
+    except botexceptions.InvalidUser as invalid:
+        print("Invalid User " + invalid.bad_id)
+        exit(1)
+    except botexceptions.InvalidBookmark as invalid:
+        print("Invalid bookmark " + invalid.invalid_bookmark)
+        exit(1)
+    except botexceptions.DuplicateUsers as duplicate:
+        print("Duplicate User " + duplicate.duplicate_id)
+        exit(1)
+    except botexceptions.MissingUsers:
+        print("No user defined!")
+        exit(1)
+    except botexceptions.MissingSection as missing:
+        print("Missing config section " + missing.missing_section)
+        exit(1)
+    except botexceptions.MissingTelegramToken:
+        print("Missing telegram token")
+        exit(1)
+    except botexceptions.MissingSpotifyUsername:
+        print("Missing spotify username")
+    except configparser.MissingSectionHeaderError:
+        print("No sections in configfile")
 
 
 if __name__ == '__main__':

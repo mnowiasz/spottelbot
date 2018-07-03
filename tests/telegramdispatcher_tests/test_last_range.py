@@ -26,6 +26,6 @@ import telegramcontroller
 def test_last_range(value, expected, exception_expected):
     if exception_expected:
         with  pytest.raises(botexceptions.InvalidRange):
-            telegramcontroller._last_range(value)
+            telegramcontroller.last_range(value)
     else:
-        assert expected == telegramcontroller._last_range(value)
+        assert expected == telegramcontroller.last_range(value)

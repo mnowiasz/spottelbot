@@ -12,8 +12,7 @@ class MissingTelegramToken(Exception):
     pass
 
 
-# No users (or empty users). This is perfectly OK when starting the bot for the first time, hence a warning
-# will suffice
+# No users (or empty users).
 class MissingUsers(Exception):
     pass
 
@@ -52,7 +51,6 @@ class SpotifyAuth(Exception):
 
 
 # Max message length
-
 class TelegramMessageLength(Exception):
     def __init__(self, length=0):
         self.invalid_length = length

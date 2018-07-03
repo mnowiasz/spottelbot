@@ -4,14 +4,14 @@ import configparser
 
 import botexceptions
 
-"""Both a bookmark name and a value (Currently playing)"""
+# Both a bookmark name and a value (Currently playing)
 bookmark_current = "current"
 
-""" /delete all, /clear all"""
+# /delete all, /clear all
 bookmark_all = "all"
 
 
-# Make sure that "current" is first in list. After that, the list can be sorted
+# Make sure that "current" is first in list. After that, the list can be sorted alphabetically
 def _bookmark_compare(key):
     if key == bookmark_current:
         return " "
@@ -59,80 +59,34 @@ class BotConfig(object):
         self.bookmarks = {}
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
 
-    def _load_telegram_config(self):
-        """
-        Loads telegram's config items
-        """
-
-        self.telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
-        if self.telegram_token == "":
-            raise botexceptions.MissingTelegramToken()
-        self.clear_access()
-        users = self._config[self._telegram_section][self._telegram_entry_users]
-        if users == "":
-            raise botexceptions.MissingUsers
-
-        for telegram_id in users.split(","):
-            stripped = telegram_id.strip()
-            try:
-                self.add_access(stripped)
-            # A KeyError in add_access() can only mean that a user ID already exist
-            except KeyError as k:
-                raise botexceptions.DuplicateUsers(stripped) from k
-
-    def _load_spotify_config(self):
-        """
-
-        Loads spotify's config items
-        """
-
-        self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username]
-        if self._spotify_username == "":
-            raise botexceptions.MissingSpotifyUsername()
-        self._spotify_client_id = self._config[self._spotify_section].get(self._spotify_entry_client_id)
-        self._spotify_client_secret = self._config[self._spotify_section].get(self._spotify_entry_client_secret)
-        self._spotify_redirect_uri = self._config[self._spotify_section].get(self._spotify_entry_redirect_uri)
-
-    def _load_bookmarks(self):
-        """
-
-        Loads the bookmarks
-        """
-
-        self.clear_bookmarks()
-        for bookmark_name, entry in self._config[self._bookmark_section].items():
-            splitted = entry.split(",")
-            track_id = splitted[0].strip()
-
-            if track_id == "" or len(splitted) > 2:
-                raise botexceptions.InvalidBookmark(bookmark_name)
-            elif len(splitted) == 1:
-                playlist_id = None
-            else:
-                playlist_id = splitted[1].strip()
-            self.set_bookmark(bookmark_name, track_id, playlist_id)
-
     def load_config(self, configfile):
         """
 
-        :param configfile: The file to parse
-        :type configfile: filelike object
+        :param configfile: The file to parse. If None, the last file (loaded/saved) will be used
+        :type configfile: file like object.
         :return:
         :rtype:
 
         Loads/reload the config stored in the file. Throws the usual exceptions
         """
 
-        self._config = configparser.ConfigParser()
-        self._config.read_file(configfile)
+        # TODO: Change from file like object to filename (including path) so /reload would be possible
+        # TODO: Plugins
+        the_configfile = configfile
+        if not configfile:
+            the_configfile = self._config_file
 
         # Reset fd so a reload won't do harm. On the other hand, the file in question could be changed so the
-        # filehandle would be invalid. But can't harm
+        # filehandle would be invalid.
 
-        configfile.seek(0)
+        the_configfile.seek(0)
+        self._config = configparser.ConfigParser()
+        self._config.read_file(the_configfile)
+
         try:
             self._load_telegram_config()
             self._load_spotify_config()
+
             if self._bookmark_section in self._config:
                 self._load_bookmarks()
 
@@ -151,54 +105,8 @@ class BotConfig(object):
             else:
                 # DuplicateSectionError, DuplicateOption...
                 raise
-        self._config_file = configfile
 
-    def _save_telegram(self):
-        """
-        Saves the telegram section
-        """
-
-        self._config.remove_section(self._telegram_section)
-        self._config.add_section(self._telegram_section)
-        self._config[self._telegram_section][self._telegram_entry_token] = self.telegram_token
-        if self.access:
-            self._config[self._telegram_section][self._telegram_entry_users] = \
-                ",".join(str(telegram_id) for telegram_id in self.access)
-
-    def _save_spotify(self):
-        """
-
-        Saves the spotify section
-        """
-
-        self._config.remove_section(self._spotify_section)
-        self._config.add_section(self._spotify_section)
-        self._config[self._spotify_section][self._spotify_entry_username] = self._spotify_username
-
-        if self._spotify_client_id:
-            self._config[self._spotify_section][self._spotify_entry_client_id] = self._spotify_client_id
-
-        if self._spotify_client_secret:
-            self._config[self._spotify_section][self._spotify_entry_client_secret] = self._spotify_client_secret
-
-        if self._spotify_redirect_uri:
-            self._config[self._spotify_section][self._spotify_entry_redirect_uri] = self._spotify_redirect_uri
-
-    def _save_bookmarks(self):
-        """
-
-        Saves the bookmark section
-        """
-
-        if self._config.has_section(self._bookmark_section):
-            self._config.remove_section(self._bookmark_section)
-        self._config.add_section(self._bookmark_section)
-        for bookmark in self.get_bookmarks():
-            track_id, playlist_id = self.get_bookmark(bookmark)
-            if playlist_id is None:
-                self._config[self._bookmark_section][bookmark] = track_id
-            else:
-                self._config[self._bookmark_section][bookmark] = track_id + "," + playlist_id
+        self._config_file = the_configfile
 
     def save_config(self, configfile):
         """
@@ -217,13 +125,12 @@ class BotConfig(object):
             the_file = self._config_file
 
         the_file.seek(0)
-        self._save_telegram()
-        self._save_spotify()
+        self._save_telegram_config()
+        self._save_spotify_config()
         self._save_bookmarks()
         self._config.write(the_file)
-        the_file.truncate()
+        the_file.truncate()  # The (overwritten) file might be smaller than it used to be (comments, bookmarks..)
         the_file.seek(0)
-
 
     def has_access(self, telegram_id: str) -> bool:
         """
@@ -265,18 +172,6 @@ class BotConfig(object):
         """
         self.access = set()
 
-    def _sanitize_bookmark(self, bookmark_string: str) -> str:
-        """
-        :param bookmark_string: The string to sanitize
-        :type bookmark_string: str
-        :return: The sanitized string
-        :rtype: str
-        Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores). Also transforms
-        to lower
-        """
-
-        return bookmark_string.strip().translate(self._translation_table).lower()
-
     def set_bookmark(self, bookmark_name: str, track_id: str, playlist_id: str = None):
         """
         :param bookmark_name: The name of the bookmark ("current", "foo", "bar"..).
@@ -285,6 +180,7 @@ class BotConfig(object):
         :type track_id: str
         :param playlist_id: The (optional) playlist ID - base62 coded
         :type playlist_id: str
+
         Sets a bookmark. If already present, the bookmark will be overwritten. If the name is a numeric value, an
         InvalidBookmark will be raised, because otherwise it would be very confusing setting a numeric bookmark to
         a numeric value (last tracks's list). "all" is also an invalid bookmark name, as in /delete all
@@ -304,6 +200,7 @@ class BotConfig(object):
         :type bookmark_name: str
         :return: The ID of the track and (optionally) playlist
         :rtype: (str, str)
+
         Gets a bookmark. If the name of the bookmark doesn't exist a KeyError will be raised
         """
         return self.bookmarks[self._sanitize_bookmark(bookmark_name)]
@@ -331,5 +228,117 @@ class BotConfig(object):
         :rtype:
         Empties the bookmark list, either by command or by reloading the config
         """
-
         self.bookmarks = {}
+
+    def _sanitize_bookmark(self, bookmark_string: str) -> str:
+        """
+        :param bookmark_string: The string to sanitize
+        :type bookmark_string: str
+        :return: The sanitized string
+        :rtype: str
+        Removes trailing/leading spaces, and replaces certain characters (like spaces to underscores). Also transforms
+        to lower
+        """
+
+        return bookmark_string.strip().translate(self._translation_table).lower()
+
+    def _load_telegram_config(self):
+        """
+        Loads telegram's config items
+        """
+
+        self.telegram_token = self._config[self._telegram_section][self._telegram_entry_token.strip()]
+        if self.telegram_token == "":
+            raise botexceptions.MissingTelegramToken()
+        self.clear_access()
+        users = self._config[self._telegram_section][self._telegram_entry_users]
+        if users == "":
+            raise botexceptions.MissingUsers
+
+        for telegram_id in users.split(","):
+            stripped = telegram_id.strip()
+            try:
+                self.add_access(stripped)
+            # A KeyError in add_access() can only mean that a user ID already exists
+            except KeyError as k:
+                raise botexceptions.DuplicateUsers(stripped) from k
+
+    def _save_telegram_config(self):
+        """
+        Saves the telegram section
+        """
+
+        self._config.remove_section(self._telegram_section)
+        self._config.add_section(self._telegram_section)
+        self._config[self._telegram_section][self._telegram_entry_token] = self.telegram_token
+        if self.access:
+            self._config[self._telegram_section][self._telegram_entry_users] = \
+                ",".join(str(telegram_id) for telegram_id in self.access)
+
+    def _load_spotify_config(self):
+        """
+
+        Loads spotify's config items
+        """
+
+        self._spotify_username = self._config[self._spotify_section][self._spotify_entry_username]
+        if self._spotify_username == "":
+            raise botexceptions.MissingSpotifyUsername()
+        self._spotify_client_id = self._config[self._spotify_section].get(self._spotify_entry_client_id)
+        self._spotify_client_secret = self._config[self._spotify_section].get(self._spotify_entry_client_secret)
+        self._spotify_redirect_uri = self._config[self._spotify_section].get(self._spotify_entry_redirect_uri)
+
+    def _save_spotify_config(self):
+        """
+
+        Saves the spotify section
+        """
+
+        self._config.remove_section(self._spotify_section)
+        self._config.add_section(self._spotify_section)
+        self._config[self._spotify_section][self._spotify_entry_username] = self._spotify_username
+
+        if self._spotify_client_id:
+            self._config[self._spotify_section][self._spotify_entry_client_id] = self._spotify_client_id
+
+        if self._spotify_client_secret:
+            self._config[self._spotify_section][self._spotify_entry_client_secret] = self._spotify_client_secret
+
+        if self._spotify_redirect_uri:
+            self._config[self._spotify_section][self._spotify_entry_redirect_uri] = self._spotify_redirect_uri
+
+    def _load_bookmarks(self):
+        """
+
+        Loads the bookmarks
+        """
+
+        self.clear_bookmarks()
+
+        for bookmark_name, entry in self._config[self._bookmark_section].items():
+            splitted = entry.split(",")
+            track_id = splitted[0].strip()
+
+            if track_id == "" or len(splitted) > 2:
+                raise botexceptions.InvalidBookmark(bookmark_name)
+            elif len(splitted) == 1:  # Playlist is optional
+                playlist_id = None
+            else:
+                playlist_id = splitted[1].strip()
+            self.set_bookmark(bookmark_name, track_id, playlist_id)
+
+    def _save_bookmarks(self):
+        """
+
+        Saves the bookmark section
+        """
+
+        if self._config.has_section(self._bookmark_section):
+            self._config.remove_section(self._bookmark_section)
+        self._config.add_section(self._bookmark_section)
+        for bookmark in self.get_bookmarks():
+            track_id, playlist_id = self.get_bookmark(bookmark)
+            if playlist_id is None:
+                self._config[self._bookmark_section][bookmark] = track_id
+            else:
+                self._config[self._bookmark_section][bookmark] = track_id + "," + playlist_id

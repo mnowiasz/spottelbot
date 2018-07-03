@@ -42,6 +42,7 @@ def __parse_last_arg(parse_string):
     else:
         lower_bound = int(value_list[0])
 
+    # "2-"
     if value_list[1] == "":
         upper_bound = spotifycontroller.last_limit
     else:
@@ -50,7 +51,7 @@ def __parse_last_arg(parse_string):
     return lower_bound, upper_bound
 
 
-def _last_range(arguments):
+def last_range(arguments):
     """
 
     :param arguments: List of arguments given to "/last"
@@ -101,7 +102,10 @@ def _last_range(arguments):
 
 
 class TelegramController(object):
+    # Decorators used for methods
     class Decorators(object):
+
+        # Commands/Methods which are not for general used (in fact, most of them with the exception of "whoami"
         @classmethod
         def restricted(self, method):
             def wrapper(self, bot: telegram.Bot, update: telegram.Update, args):
@@ -113,6 +117,8 @@ class TelegramController(object):
 
             return wrapper
 
+        # Autosave (if on, currenlty always on, setting autosave on/off needs to be written yet) method which
+        # affect the configfile (users, bookmarks)
         @classmethod
         def autosave(self, method):
             def wrapper(self, *args, **kwargs):
@@ -136,6 +142,10 @@ class TelegramController(object):
         self._spotify_controller = spotify_controller
         self._updater = None
         self._output_buffer = ""
+
+        # TODO: /adduser, /deluser /users
+        # TODO: /autosave (on/off)
+        # TODO: /mode (spotify, html, plain)
 
         # Command(s), handler, Helptext (short), Helptext(list) long
         self._handlers = (
@@ -166,6 +176,33 @@ class TelegramController(object):
                 "*/clear all* clears all bookmarks"))
         )
 
+    def connect(self):
+        """
+
+        :return:
+        :rtype:
+
+        Connect to telegram, start the loop
+        """
+        self._updater = telegram.ext.Updater(self._config.telegram_token)
+
+        for handler in self._handlers:
+            command_s = handler[0]
+            method_handler = handler[1]
+            if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
+                for command in command_s:
+                    self._updater.dispatcher.add_handler(
+                        telegram.ext.CommandHandler(command, method_handler, pass_args=True))
+            else:
+                self._updater.dispatcher.add_handler(
+                    telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
+
+        self._updater.start_polling()
+
+    def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
+        bot.send_message(chat_id=update.message.chat_id, text="*You are not authorized to use this function*",
+                         parse_mode=telegram.ParseMode.MARKDOWN)
+
     def _send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
         """
 
@@ -187,8 +224,7 @@ class TelegramController(object):
         """
 
         # Not sure if there should be a seperate buffer for eatch chat_id.. i.e. is this method thread safe? Does
-        # it need to be? For know there won't be buffers per chat_id, only one single, global one.
-
+        # it need to be? For now there won't be buffers per chat_id, only one single, global one.
         message_length = len(text)
 
         if message_length >= max_message_length:
@@ -206,6 +242,7 @@ class TelegramController(object):
             bot.send_message(chat_id=chat_id, text=self._output_buffer, **kwargs)
             self._output_buffer = ""
 
+    # Since traversing the command tuples may be expensive, it makes sense caching the results.
     @functools.lru_cache(maxsize=20)
     def _find_help_for_command(self, command: str):
         """
@@ -242,33 +279,6 @@ class TelegramController(object):
         else:
             return quick_help + "\n"
 
-    def connect(self):
-        """
-
-        :return:
-        :rtype:
-
-        Connect to telegram, start the loop
-        """
-        self._updater = telegram.ext.Updater(self._config.telegram_token)
-
-        for handler in self._handlers:
-            command_s = handler[0]
-            method_handler = handler[1]
-            if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
-                for command in command_s:
-                    self._updater.dispatcher.add_handler(
-                        telegram.ext.CommandHandler(command, method_handler, pass_args=True))
-            else:
-                self._updater.dispatcher.add_handler(
-                    telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
-
-        self._updater.start_polling()
-
-    def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
-        bot.send_message(chat_id=update.message.chat_id, text="*You are not authorized to use this function*",
-                         parse_mode=telegram.ParseMode.MARKDOWN)
-
     # "/whoami"
     def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
@@ -276,16 +286,16 @@ class TelegramController(object):
         message = "You are @{} ({})".format(user.username, user.id)
         bot.send_message(chat_id=update.message.chat_id, text=message)
 
-    # Has to be called from another thread
-    def _quit(self):
-        self._updater.stop()
-        self._updater.is_idle = False
-
     # /quit, /shutdown, bye
     @Decorators.restricted
     def _quit_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
         threading.Thread(target=self._quit).start()
+
+    # Has to be called from another thread
+    def _quit(self):
+        self._updater.stop()
+        self._updater.is_idle = False
 
     # /help, /help add, ...
     @Decorators.restricted
@@ -328,6 +338,7 @@ class TelegramController(object):
             self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
                                       parse_mode=telegram.ParseMode.MARKDOWN)
 
+    # /current
     def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         message = self._spotify_controller.get_current()
         if not message:
@@ -342,7 +353,7 @@ class TelegramController(object):
         output = ""
 
         try:
-            lower, upper = _last_range(args)
+            lower, upper = last_range(args)
             output_list = self._spotify_controller.get_last_tracks(lower, upper)
 
             for i, item in enumerate(output_list, lower):
@@ -362,6 +373,7 @@ class TelegramController(object):
         # 1.) /list without any argument -> list all bookmarks
         if len(args) == 0:
             bookmark_list = self._config.get_bookmarks()
+            print(bookmark_list)
             if bookmark_list:
                 text = ""
                 for bookmark in bookmark_list:
@@ -388,19 +400,6 @@ class TelegramController(object):
             message = "*Invalid bookmark(s)/argument(s): {}*".format(invalid.invalid_bookmark)
 
         bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
-
-    # /clear, /delete...
-    @Decorators.restricted
-    @Decorators.autosave
-    def _clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-
-        message_list = self.delete(args)
-
-        for message in message_list:
-            self._send_message_buffer(bot, update.message.chat_id, text=message, final=False,
-                                      parse_mode=telegram.ParseMode.MARKDOWN)
-        self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                  parse_mode=telegram.ParseMode.MARKDOWN)
 
     def mark(self, arguments: list) -> str:
         """
@@ -466,6 +465,19 @@ class TelegramController(object):
 
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
         return "Bookmark *{}* set".format(bookmark_name)
+
+    # /clear, /delete...
+    @Decorators.restricted
+    @Decorators.autosave
+    def _clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+
+        message_list = self.delete(args)
+
+        for message in message_list:
+            self._send_message_buffer(bot, update.message.chat_id, text=message, final=False,
+                                      parse_mode=telegram.ParseMode.MARKDOWN)
+        self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                  parse_mode=telegram.ParseMode.MARKDOWN)
 
     def delete(self, arguments: list) -> list:
         """
