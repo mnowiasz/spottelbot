@@ -5,7 +5,7 @@ setup(
     version='0.1.0',
     description='A telegram bot implementing missing spotify features',
     author="@mnowiasz",
-    author_email="nowiasz@gmail.com",
+    author_email="mark+spottelbot@nowiasz.de",
     url='https://github.com/mnowiasz/spottelbot',
     install_requires=[
         'future>=0.16.0',
