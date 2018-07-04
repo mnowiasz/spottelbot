@@ -352,6 +352,8 @@ class TelegramController(object):
 
         try:
             lower, upper = last_range(args)
+            if lower > upper:
+                raise botexceptions.InvalidRange("{}-{}".format(lower, upper))
             output_list = self._spotify_controller.get_last_tracks(lower, upper)
 
             for i, item in enumerate(output_list, lower):

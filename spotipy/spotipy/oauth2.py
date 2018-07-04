@@ -194,31 +194,38 @@ class SpotifyOAuth(object):
     def _make_authorization_headers(self):
         return _make_authorization_headers(self.client_id, self.client_secret)
 
-    def get_access_token(self, code):
+    def get_access_token(self, code=None):
         """ Gets the access token for the app given the code
 
             Parameters:
                 - code - the response code
         """
 
-        payload = {'redirect_uri': self.redirect_uri,
-                   'code': code,
-                   'grant_type': 'authorization_code'}
-        if self.scope:
-            payload['scope'] = self.scope
-        if self.state:
-            payload['state'] = self.state
+        if code:
+            payload = {'redirect_uri': self.redirect_uri,
+                       'code': code,
+                       'grant_type': 'authorization_code'}
+            if self.scope:
+                payload['scope'] = self.scope
+            if self.state:
+                payload['state'] = self.state
 
-        headers = self._make_authorization_headers()
+            headers = self._make_authorization_headers()
 
-        response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
-            headers=headers, verify=True, proxies=self.proxies)
-        if response.status_code != 200:
-            raise SpotifyOauthError(response.reason)
-        token_info = response.json()
-        token_info = self._add_custom_values_to_token_info(token_info)
-        self._save_token_info(token_info)
-        return token_info
+            response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
+                headers=headers, verify=True, proxies=self.proxies)
+            if response.status_code != 200:
+                raise SpotifyOauthError(response.reason)
+            token_info = response.json()
+            token_info = self._add_custom_values_to_token_info(token_info)
+            self._save_token_info(token_info)
+            return token_info
+        else:
+            token_info = self.get_cached_token()
+            if token_info:
+                return token_info['access_token']
+            else:
+                raise SpotifyOauthError("Automatic getting token from cache failed when manual not possible")
 
     def _normalize_scope(self, scope):
         if scope:

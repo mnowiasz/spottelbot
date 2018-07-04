@@ -4,6 +4,7 @@ import functools
 
 import spotipy.spotipy.client as cl
 import spotipy.spotipy.util as util
+import spotipy.spotipy.oauth2 as oath2
 from spottelbot import botconfig
 from spottelbot import botexceptions
 
@@ -32,7 +33,7 @@ class SpotifyController(object):
 
     def __init__(self, config: botconfig.BotConfig):
         self._config = config
-        self._token = None
+        self._oath = None
         self._client = None
 
     def _format_track_object(self, track_object: dict):
@@ -144,13 +145,15 @@ class SpotifyController(object):
         :return:
         :rtype:
         """
+
         config = self._config
-        self._token = util.prompt_for_user_token(config._spotify_username, scope, config._spotify_client_id,
+        self._oath = util.prompt_for_oauth_object(config._spotify_username, scope, config._spotify_client_id,
                                                  config._spotify_client_secret, config._spotify_redirect_uri)
-        if not self._token:
+
+        if not self._oath:
             raise botexceptions.SpotifyAuth
 
-        self._client = cl.Spotify(auth=self._token)
+        self._client = cl.Spotify(client_credentials_manager=self._oath)
 
     def get_current(self, formatted=True):
         """
