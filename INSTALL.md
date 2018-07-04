@@ -62,7 +62,11 @@ and error, because you'll be redirected to http://localhost.../ which is perfect
 
 Copy the complete URL from your browser (http://localhost/...........) into this. After
 that you're finished, because the auth token created by this procedure will be cached
-and automatically renewed.
+and automatically renewed. *Note*: If you move the bot - i.e. let it run on another server - 
+you'll be asked again. BTW, running the bot twice will result in a couple of exceptions. 
+You only can run it once at a time, so if you want to run it somewhere else, make sure that
+the currently running instance is shut down (/bye, or ctrl+c).
+
 
 
 
