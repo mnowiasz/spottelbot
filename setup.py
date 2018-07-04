@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='spottelbot',
-    version='0.1.0',
+    version='0.1.1',
     description='A telegram bot implementing missing spotify features',
     author="@mnowiasz",
     author_email="mark+spottelbot@nowiasz.de",
