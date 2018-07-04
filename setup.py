@@ -8,6 +8,7 @@ setup(
     author_email="nowiasz@gmail.com",
     url='https://github.com/mnowiasz/spottelbot',
     install_requires=[
+        'future>=0.16.0',
         'requests>=2.3.0',
         'six>=1.10.0',
         'python-telegram-bot>=10.1.0'
