@@ -58,30 +58,26 @@ class BotConfig(object):
         self.access = set()
         self.bookmarks = {}
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
+        self._config_file_name = None
 
-    def load_config(self, configfile):
+    def load_config(self, configfile_name: str):
         """
 
-        :param configfile: The file to parse. If None, the last file (loaded/saved) will be used
-        :type configfile: file like object.
+        :param configfile_name: The file to parse. If None, the last file (loaded/saved) will be used
+        :type configfile_name: str
         :return:
         :rtype:
 
         Loads/reload the config stored in the file. Throws the usual exceptions
         """
 
-        # TODO: Change from file like object to filename (including path) so /reload would be possible
         # TODO: Plugins
-        the_configfile = configfile
-        if not configfile:
-            the_configfile = self._config_file
+        the_config_file_name = configfile_name
+        if not configfile_name:
+            the_config_file_name = self._config_file_name
 
-        # Reset fd so a reload won't do harm. On the other hand, the file in question could be changed so the
-        # filehandle would be invalid.
-
-        the_configfile.seek(0)
         self._config = configparser.ConfigParser()
-        self._config.read_file(the_configfile)
+        self._config.read(the_config_file_name)
 
         try:
             self._load_telegram_config()
@@ -106,23 +102,24 @@ class BotConfig(object):
                 # DuplicateSectionError, DuplicateOption...
                 raise
 
-        self._config_file = the_configfile
+        self._config_file_name = the_config_file_name
 
-    def save_config(self, configfile):
+    def save_config(self, configfile_name: str):
         """
 
-        :param configfile: The file like object to write the config into. If None, the last file (loaded/saved) will be used
-        :type configfile: File
+        :param configfile_name: The filename to write the config into. If None, the last file (loaded/saved) will be used
+        :type configfile: str
         :return:
         :rtype:
 
         Write the config into the specified configfile
         """
 
-        the_file = configfile
+        the_file_name = configfile_name
+        if not configfile_name:
+            the_file_name = self._config_file_name
 
-        if not configfile:
-            the_file = self._config_file
+        the_file = open(the_file_name, "w")
 
         the_file.seek(0)
         self._save_telegram_config()

@@ -4,7 +4,6 @@ import functools
 
 import spotipy.spotipy.client as cl
 import spotipy.spotipy.util as util
-import spotipy.spotipy.oauth2 as oath2
 from spottelbot import botconfig
 from spottelbot import botexceptions
 
@@ -27,6 +26,7 @@ playlist_str = "playlist"
 track_str = "track"
 type_str = "type"
 uri_str = "uri"
+played_at_str = "played_at"
 
 
 class SpotifyController(object):
@@ -221,9 +221,10 @@ class SpotifyController(object):
         pho_list = self._get_last_play_history_objects(lower - 1, upper - 1)
 
         for play_history_object in pho_list:
+            played_at = play_history_object[played_at_str]
             formatted_tracks_list.append(
                 self._format_track_object(play_history_object[track_str]) + self._format_context_object(
-                    play_history_object[context_str]))
+                    play_history_object[context_str]) + ": " + played_at)
 
         return formatted_tracks_list
 
