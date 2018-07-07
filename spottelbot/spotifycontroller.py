@@ -1,6 +1,10 @@
 """ The spotify related functions and constants"""
 
+import datetime
 import functools
+
+import dateutil.parser
+import dateutil.tz
 
 import spotipy.spotipy.client as cl
 import spotipy.spotipy.util as util
@@ -36,6 +40,56 @@ class SpotifyController(object):
         self._oath = None
         self._client = None
 
+    def _format_context_object(self, context_object: dict):
+        """
+
+        :param context_object: The context object
+        :type context_object: dict
+        :return: Formatted string
+        :rtype: str
+
+        Formats the context object. A context object describes the context the track was played from (playlist, album..)
+        Currently only the playlist is supported, the album is usually already part of the track object
+        """
+        formatted_context = None
+
+        if context_object[type_str] == playlist_str:
+            playlist_uri = context_object[uri_str]
+            playlist_dict = self._get_playlist(playlist_uri)
+            formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])
+
+        return formatted_context
+
+    def _format_played_at(self, played_at_object: str) -> str:
+        """
+
+        :param played_at_object: The content of 'played_at'
+        :return: Formatted string
+
+        Formats the play_at_object ("2018-07-06T..."), returns the formatted string
+        """
+
+        local_tz = dateutil.tz.tzlocal()
+        date_time = dateutil.parser.parse(played_at_object).astimezone(local_tz)
+
+        date_string = ""
+
+        today = datetime.datetime.now(local_tz)
+
+        if today.weekday() == date_time.weekday():
+            date_string = "Today"
+        else:
+            delta = today - date_time
+            if delta.days == 1:
+                date_string = "Yesterday"
+            else:
+                if delta.days <= 6:
+                    format_string = "%a"
+                else:
+                    format_string = "%x"
+                date_string = datetime.datetime.strftime(date_time, format_string)
+        return date_string + " " + datetime.datetime.strftime(date_time, "%X")
+
     def _format_track_object(self, track_object: dict):
         """
 
@@ -61,26 +115,6 @@ class SpotifyController(object):
                 formatted_track += the_item + seperator
 
         return formatted_track
-
-    def _format_context_object(self, context_object: dict):
-        """
-
-        :param context_object: The context object
-        :type context_object: dict
-        :return: Formatted string
-        :rtype: str
-
-        Formats the context object. A context object describes the context the track was played from (playlist, album..)
-        Currently only the playlist is supported, the album is usually already part of the track object
-        """
-        formatted_context = None
-
-        if context_object[type_str] == playlist_str:
-            playlist_uri = context_object[uri_str]
-            playlist_dict = self._get_playlist(playlist_uri)
-            formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])
-
-        return formatted_context
 
     # Since a playlist (at least the name) usually doesn't change that often and this method is being called
     # by the bookmark functions (usually more than once), it can be cached so we don't get any spotify rate limit.
@@ -148,7 +182,7 @@ class SpotifyController(object):
 
         config = self._config
         self._oath = util.prompt_for_oauth_object(config._spotify_username, scope, config._spotify_client_id,
-                                                 config._spotify_client_secret, config._spotify_redirect_uri)
+                                                  config._spotify_client_secret, config._spotify_redirect_uri)
 
         if not self._oath:
             raise botexceptions.SpotifyAuth
@@ -221,10 +255,10 @@ class SpotifyController(object):
         pho_list = self._get_last_play_history_objects(lower - 1, upper - 1)
 
         for play_history_object in pho_list:
-            played_at = play_history_object[played_at_str]
+            played_at_string = self._format_played_at(play_history_object[played_at_str])
             formatted_tracks_list.append(
                 self._format_track_object(play_history_object[track_str]) + self._format_context_object(
-                    play_history_object[context_str]) + ": " + played_at)
+                    play_history_object[context_str]) + " - " + played_at_string)
 
         return formatted_tracks_list
 

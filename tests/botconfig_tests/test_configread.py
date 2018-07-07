@@ -11,7 +11,7 @@ _config = botconfig.BotConfig()
 
 
 def test_loadconfig():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
 
 
 @pytest.mark.parametrize("filename", ("missingsection1.config", "missingsection2.config"))
@@ -19,31 +19,31 @@ def test_loadconfig_missingsections(filename):
     config_file_missingsection = os.path.join(_config_path, filename)
 
     with pytest.raises(botexceptions.MissingSection):
-        _config.load_config(config_file_missingsection)
+        _config._load_config(config_file_missingsection)
 
 
 def test_telegram_token():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
     assert "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw" == _config.telegram_token
 
 
 def test_spotify_username():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
     assert "SpotifyUser" == _config._spotify_username
 
 
 def test_spotify_client_id():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
     assert "avcdeefg" == _config._spotify_client_id
 
 
 def test_spotify_client_secret():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
     assert "12345t6343" == _config._spotify_client_secret
 
 
 def test_spotify_redirect_uri():
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
     assert "http://localhost/xyz" == _config._spotify_redirect_uri
 
 
@@ -60,7 +60,7 @@ class TestAccessConfig(object):
     @classmethod
     def setup_class(cls):
         cls._config = botconfig.BotConfig()
-        cls._config.load_config(_config_file_valid)
+        cls._config._load_config(_config_file_valid)
 
     @pytest.mark.parametrize("telegram_id, access_granted", _test_data)
     def test_has_access(self, telegram_id, access_granted):
@@ -71,20 +71,20 @@ class TestAccessConfig(object):
 def test_loadconfig_missingusers(filename):
     config_file_missingusers = os.path.join(_config_path, filename)
     with pytest.raises(botexceptions.MissingUsers):
-        _config.load_config(config_file_missingusers)
+        _config._load_config(config_file_missingusers)
 
 
 def test_duplicate_users():
     config_file_duplicate = os.path.join(_config_path, "duplicateusers.config")
     with pytest.raises(botexceptions.DuplicateUsers) as duplicate:
-        _config.load_config(config_file_duplicate)
+        _config._load_config(config_file_duplicate)
     assert "12354" == duplicate.value.duplicate_id
 
 
 def test_loadconfig_badusers():
     config_file_badusers = os.path.join(_config_path, "badusers.config")
     with pytest.raises(botexceptions.InvalidUser) as invalid_exception:
-        _config.load_config(config_file_badusers)
+        _config._load_config(config_file_badusers)
     assert "bad_user" == invalid_exception.value.bad_id
 
 
@@ -92,21 +92,21 @@ def test_loadconfig_badusers():
 def test_loadconfig_missingtoken(filename):
     config_file_missingtoken = os.path.join(_config_path, filename)
     with pytest.raises(botexceptions.MissingTelegramToken):
-        _config.load_config(config_file_missingtoken)
+        _config._load_config(config_file_missingtoken)
 
 
 @pytest.mark.parametrize("filename", ("missingusername1.config", "missingusername2.config"))
 def test_loadconfig_missingusername(filename):
     config_file_missingusername = os.path.join(_config_path, filename)
     with pytest.raises(botexceptions.MissingSpotifyUsername):
-        _config.load_config(config_file_missingusername)
+        _config._load_config(config_file_missingusername)
 
 
 class TestBookmarks(object):
     @classmethod
     def setup_class(cls):
         cls._config = botconfig.BotConfig()
-        cls._config.load_config(_config_file_valid)
+        cls._config._load_config(_config_file_valid)
 
     @pytest.mark.parametrize("bookmark_name, track_id, playlist_id", (
             ("current", "5aftzefdrefg", None),
@@ -120,24 +120,24 @@ class TestBookmarks(object):
 def test_loadconfig_duplicatebookmarks():
     config_file_duplicate = os.path.join(_config_path, "duplicatebookmarks.config")
     with pytest.raises(configparser.DuplicateOptionError):
-        _config.load_config(config_file_duplicate)
+        _config._load_config(config_file_duplicate)
 
 
 def test_loadconfig_invalidbookmarks():
     config_file_invalid = os.path.join(_config_path, "invalidbookmarks.config")
     with pytest.raises(botexceptions.InvalidBookmark) as invalid_bookmark:
-        _config.load_config(config_file_invalid)
+        _config._load_config(config_file_invalid)
     assert "current" == invalid_bookmark.value.invalid_bookmark
 
 
 def test_loadconfig_missingbookmarks():
     config_file_missing = os.path.join(_config_path, "missingbookmarks.config")
     with pytest.raises(botexceptions.InvalidBookmark) as invalid_bookmark:
-        _config.load_config(config_file_missing)
+        _config._load_config(config_file_missing)
     assert "current" == invalid_bookmark.value.invalid_bookmark
 
 
 def test_duplicate_configread():
-    _config.load_config(_config_file_valid)
-    _config.load_config(_config_file_valid)
-    _config.load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)
+    _config._load_config(_config_file_valid)

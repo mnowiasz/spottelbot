@@ -60,49 +60,35 @@ class BotConfig(object):
         self._translation_table = dict.fromkeys(map(ord, " \t"), "_")
         self._config_file_name = None
 
-    def load_config(self, configfile_name: str):
+    def load_config(self, configfile_name: str) -> str:
         """
 
-        :param configfile_name: The file to parse. If None, the last file (loaded/saved) will be used
-        :type configfile_name: str
-        :return:
-        :rtype:
+        :param configfile_name: The filename to load the config from. If non, the last file (loaded/saved) will be used
+        :return: None if all went well, otherwise an error string
 
-        Loads/reload the config stored in the file. Throws the usual exceptions
+        Basically a wrapper around _load_config. The exceptions will be caught and written into the return string. If
+        everything went well, None will be returned
         """
-
-        # TODO: Plugins
-        the_config_file_name = configfile_name
-        if not configfile_name:
-            the_config_file_name = self._config_file_name
-
-        self._config = configparser.ConfigParser()
-        self._config.read(the_config_file_name)
 
         try:
-            self._load_telegram_config()
-            self._load_spotify_config()
-
-            if self._bookmark_section in self._config:
-                self._load_bookmarks()
-
-        # Transform generic exceptions into more specific ones which are more easily processed, resulting in more
-        # readable code
-        except KeyError as key_error:
-            missing_key = key_error.args[0]
-            if missing_key == self._telegram_section or missing_key == self._spotify_section:
-                raise botexceptions.MissingSection(missing_key) from key_error
-            elif missing_key == self._telegram_entry_token:
-                raise botexceptions.MissingTelegramToken from key_error
-            elif missing_key == self._telegram_entry_users:
-                raise botexceptions.MissingUsers from key_error
-            elif missing_key == self._spotify_entry_username:
-                raise botexceptions.MissingSpotifyUsername from key_error
-            else:
-                # DuplicateSectionError, DuplicateOption...
-                raise
-
-        self._config_file_name = the_config_file_name
+            self._load_config(configfile_name)
+            return None
+        except botexceptions.InvalidUser as invalid:
+            return "Invalid User " + invalid.bad_id
+        except botexceptions.InvalidBookmark as invalid:
+            return "Invalid bookmark " + invalid.invalid_bookmark
+        except botexceptions.DuplicateUsers as duplicate:
+            return "Duplicate User " + duplicate.duplicate_id
+        except botexceptions.MissingUsers:
+            return "No user defined!"
+        except botexceptions.MissingSection as missing:
+            return "Missing config section " + missing.missing_section
+        except botexceptions.MissingTelegramToken:
+            return "Missing telegram token"
+        except botexceptions.MissingSpotifyUsername:
+            return "Missing spotify username"
+        except configparser.MissingSectionHeaderError:
+            return "No sections in configfile"
 
     def save_config(self, configfile_name: str):
         """
@@ -238,6 +224,50 @@ class BotConfig(object):
         """
 
         return bookmark_string.strip().translate(self._translation_table).lower()
+
+    def _load_config(self, configfile_name: str):
+        """
+
+        :param configfile_name: The file to parse. If None, the last file (loaded/saved) will be used
+        :type configfile_name: str
+        :return:
+        :rtype:
+
+        Loads/reload the config stored in the file. Throws the usual exceptions
+        """
+
+        # TODO: Plugins
+        the_config_file_name = configfile_name
+        if not configfile_name:
+            the_config_file_name = self._config_file_name
+
+        self._config = configparser.ConfigParser()
+        self._config.read(the_config_file_name)
+
+        try:
+            self._load_telegram_config()
+            self._load_spotify_config()
+
+            if self._bookmark_section in self._config:
+                self._load_bookmarks()
+
+        # Transform generic exceptions into more specific ones which are more easily processed, resulting in more
+        # readable code
+        except KeyError as key_error:
+            missing_key = key_error.args[0]
+            if missing_key == self._telegram_section or missing_key == self._spotify_section:
+                raise botexceptions.MissingSection(missing_key) from key_error
+            elif missing_key == self._telegram_entry_token:
+                raise botexceptions.MissingTelegramToken from key_error
+            elif missing_key == self._telegram_entry_users:
+                raise botexceptions.MissingUsers from key_error
+            elif missing_key == self._spotify_entry_username:
+                raise botexceptions.MissingSpotifyUsername from key_error
+            else:
+                # DuplicateSectionError, DuplicateOption...
+                raise
+
+        self._config_file_name = the_config_file_name
 
     def _load_telegram_config(self):
         """
