@@ -11,6 +11,7 @@ setup(
         'future>=0.16.0',
         'requests>=2.3.0',
         'six>=1.10.0',
+        'python-dateutil>=2.7.3',
         'python-telegram-bot>=10.1.0'
     ],
     entry_points={

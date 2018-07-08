@@ -113,7 +113,7 @@ class TelegramController(object):
                 if self._config.has_access("@" + user.username) or self._config.has_access(user.id):
                     return method(self, bot, update, args)
                 else:
-                    return self._unauthorized(bot, update, args)
+                    return self.unauthorized(bot, update, args)
 
             return wrapper
 
@@ -149,31 +149,32 @@ class TelegramController(object):
 
         # Command(s), handler, Helptext (short), Helptext(list) long
         self._handlers = (
-            (("bye", "quit", "shutdown"), self._quit_handler, "Shutdown the bot (caution!)", (
+            (("bye", "quit", "shutdown"), self.__quit_handler, "Shutdown the bot (caution!)", (
                 "Shuts down the bot. After shutdown you have to start the again via CLI",
                 "*Note:* This command may take a couple of seconds before the bot process finally finishes")),
-            ("whoami", self._whoami_handler, "Shows the Username and it's numeric ID", (
+            ("whoami", self.__whoami_handler, "Shows the Username and it's numeric ID", (
                 "Returns the username and it's numeric ID to the caller",
                 "Useful when you get an 'Access denied' and have a look at he access rules")),
-            ("help", self._help_handler, "This command", ("*/help:* Show all available commands",
+            ("help", self.__help_handler, "This command", ("*/help:* Show all available commands",
                                                           "*/help <command>*: Gives detailed help for the commad in question")),
-            ("current", self._current_handler, "Get the currently playing track", (
+            ("current", self.__current_handler, "Get the currently playing track", (
                 "Shows the currenty playing track, if any.",
                 "*Note:* There has to a tracking playing for this to work!",
                 "A track stopped at the beginning won't show up")),
-            ("last", self._last_handler, "Recently played tracks", (
+            ("last", self.__last_handler, "Recently played tracks", (
                 "*last* without any parameter will get the last 50 tracks", "*/last 5* shows the last 5 tracks",
                 "*last 4-10* shows you track 4 to 10")),
-            (("show", "list"), self._list_handler, "Shows the bookmark(s)",
+            (("show", "list"), self.__list_handler, "Shows the bookmark(s)",
              ("/list without any parameter lists all bookmarks", "/show <bookmarkname> shows you the <bookmarkname>")),
-            (("mark", "set"), self._mark_handler, "Sets a bookmark", (
+            (("mark", "set"), self.__mark_handler, "Sets a bookmark", (
                 "*/mark* without any parameter will set the special bookmark 'current' to the currently playing song (if any)",
                 "*/mark 5* sets the special bookmark 'current' to the 5th played track",
                 "*/mark mybookmark 6* sets the bookmark 'mybookmark' to the 6th recently played track",
                 "*Note*: boomarks will be transformed to lower case, so 'BookMark' and 'bookmark' are the same")),
-            (("clear", "delete"), self._clear_handler, "Deletes bookmark(s) (or all)", (
+            (("clear", "delete"), self.__clear_handler, "Deletes bookmark(s) (or all)", (
                 "*/clear <bookmarkname>* deletes the bookmark", "*/clear a b c* deletes bookmarks a, b and c",
-                "*/clear all* clears all bookmarks"))
+                "*/clear all* clears all bookmarks")),
+            ("reload", self.__reload_handler, "Reloads config", "Reloads the config. Not very useful (yet)", None)
         )
 
     def connect(self):
@@ -199,11 +200,11 @@ class TelegramController(object):
 
         self._updater.start_polling()
 
-    def _unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
+    def unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
         bot.send_message(chat_id=update.message.chat_id, text="*You are not authorized to use this function*",
                          parse_mode=telegram.ParseMode.MARKDOWN)
 
-    def _send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
+    def __send_message_buffer(self, bot: telegram.Bot, chat_id: str, text: str, final=False, **kwargs):
         """
 
         :param bot: Telegram bot
@@ -244,7 +245,7 @@ class TelegramController(object):
 
     # Since traversing the command tuples may be expensive, it makes sense caching the results.
     @functools.lru_cache(maxsize=20)
-    def _find_help_for_command(self, command: str):
+    def __find_help_for_command(self, command: str):
         """
 
         :param command: The command in question
@@ -279,27 +280,30 @@ class TelegramController(object):
         else:
             return quick_help + "\n"
 
-    # "/whoami"
-    def _whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-
-        user: telegram.User = update.message.from_user
-        message = "You are @{} ({})".format(user.username, user.id)
-        bot.send_message(chat_id=update.message.chat_id, text=message)
-
-    # /quit, /shutdown, bye
+    # /clear, /delete...
     @Decorators.restricted
-    def _quit_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
-        threading.Thread(target=self._quit).start()
+    @Decorators.autosave
+    def __clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
-    # Has to be called from another thread
-    def _quit(self):
-        self._updater.stop()
-        self._updater.is_idle = False
+        message_list = self.delete(args)
+
+        for message in message_list:
+            self.__send_message_buffer(bot, update.message.chat_id, text=message, final=False,
+                                       parse_mode=telegram.ParseMode.MARKDOWN)
+        self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                   parse_mode=telegram.ParseMode.MARKDOWN)
+
+    # /current
+    def __current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        message = self._spotify_controller.get_current()
+        if not message:
+            message = "Nothing playing at the moment"
+
+        bot.send_message(chat_id=update.message.chat_id, text=message)
 
     # /help, /help add, ...
     @Decorators.restricted
-    def _help_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+    def __help_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
         # /help without an argument -> List all commands and the quick help
         if len(args) == 0:
@@ -312,43 +316,35 @@ class TelegramController(object):
                 else:
                     text += command_s
                 text += "*: {}\n".format(quick_help)
-                self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
-                                          parse_mode=telegram.ParseMode.MARKDOWN)
-            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                      parse_mode=telegram.ParseMode.MARKDOWN)
+                self.__send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                           parse_mode=telegram.ParseMode.MARKDOWN)
+            self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                       parse_mode=telegram.ParseMode.MARKDOWN)
         else:
             # /help help, /help clear, /help mark clear...
             for arg in args:
-                help = self._find_help_for_command(arg)
+                help = self.__find_help_for_command(arg)
                 if help:
-                    self._send_message_buffer(bot, update.message.chat_id, text="*{}*: ".format(arg), final=False,
-                                              parse_mode=telegram.ParseMode.MARKDOWN)
+                    self.__send_message_buffer(bot, update.message.chat_id, text="*{}*: ".format(arg), final=False,
+                                               parse_mode=telegram.ParseMode.MARKDOWN)
                     if isinstance(help, collections.Iterable) and not isinstance(help, str):
                         for help_line in help:
-                            self._send_message_buffer(bot, update.message.chat_id, text=help_line + "\n", final=False,
-                                                      parse_mode=telegram.ParseMode.MARKDOWN)
+                            self.__send_message_buffer(bot, update.message.chat_id, text=help_line + "\n", final=False,
+                                                       parse_mode=telegram.ParseMode.MARKDOWN)
                     else:
-                        self._send_message_buffer(bot, update.message.chat_id, text=help + "\n", final=False,
-                                                  parse_mode=telegram.ParseMode.MARKDOWN)
+                        self.__send_message_buffer(bot, update.message.chat_id, text=help + "\n", final=False,
+                                                   parse_mode=telegram.ParseMode.MARKDOWN)
                 else:
                     # Unknown command
-                    self._send_message_buffer(bot, update.message.chat_id, text="*{}: Unknown command*\n".format(arg),
-                                              final=False, parse_mode=telegram.ParseMode.MARKDOWN)
+                    self.__send_message_buffer(bot, update.message.chat_id, text="*{}: Unknown command*\n".format(arg),
+                                               final=False, parse_mode=telegram.ParseMode.MARKDOWN)
             # Empty Buffer
-            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                      parse_mode=telegram.ParseMode.MARKDOWN)
-
-    # /current
-    def _current_handler(self, bot: telegram.Bot, update: telegram.Update, args):
-        message = self._spotify_controller.get_current()
-        if not message:
-            message = "Nothing playing at the moment"
-
-        bot.send_message(chat_id=update.message.chat_id, text=message)
+            self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                       parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /last
     @Decorators.restricted
-    def _last_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+    def __last_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
         try:
             lower, upper = last_range(args)
@@ -358,10 +354,10 @@ class TelegramController(object):
 
             for i, item in enumerate(output_list, lower):
                 text = "*{}*: {}\n".format(i, item)
-                self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
-                                          parse_mode=telegram.ParseMode.MARKDOWN)
-            self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                      parse_mode=telegram.ParseMode.MARKDOWN)
+                self.__send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                           parse_mode=telegram.ParseMode.MARKDOWN)
+            self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                       parse_mode=telegram.ParseMode.MARKDOWN)
         except botexceptions.InvalidRange as range_error:
             bot.send_message(chat_id=update.message.chat_id,
                              text="*Invalid range {}. Must be between 1 and {}*".format(range_error.invalid_argument,
@@ -370,7 +366,7 @@ class TelegramController(object):
 
     # /list, /show
     @Decorators.restricted
-    def _list_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+    def __list_handler(self, bot: telegram.Bot, update: telegram.Update, args):
 
         # 1.) /list without any argument -> list all bookmarks
         if len(args) == 0:
@@ -383,18 +379,18 @@ class TelegramController(object):
                     if playlist_id:
                         text += " (Playlist {})".format(self._spotify_controller.get_playlist(playlist_id))
                     text += "\n"
-                    self._send_message_buffer(bot, update.message.chat_id, text=text, final=False,
-                                              parse_mode=telegram.ParseMode.MARKDOWN)
-                self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                          parse_mode=telegram.ParseMode.MARKDOWN)
+                    self.__send_message_buffer(bot, update.message.chat_id, text=text, final=False,
+                                               parse_mode=telegram.ParseMode.MARKDOWN)
+                self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
+                                           parse_mode=telegram.ParseMode.MARKDOWN)
             else:
-                self._send_message_buffer(bot, update.message.chat_id, text="Not bookmarks found", final=True,
-                                          parse_mode=telegram.ParseMode.MARKDOWN)
+                self.__send_message_buffer(bot, update.message.chat_id, text="Not bookmarks found", final=True,
+                                           parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /mark, /set..
     @Decorators.restricted
     @Decorators.autosave
-    def _mark_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+    def __mark_handler(self, bot: telegram.Bot, update: telegram.Update, args):
         try:
             message = self.mark(args)
         except botexceptions.InvalidBookmark as invalid:
@@ -467,18 +463,37 @@ class TelegramController(object):
         self._config.set_bookmark(bookmark_name, track_id, playlist_id)
         return "Bookmark *{}* set".format(bookmark_name)
 
-    # /clear, /delete...
+    # /quit, /shutdown, bye
     @Decorators.restricted
-    @Decorators.autosave
-    def _clear_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+    def __quit_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+        bot.send_message(chat_id=update.message.chat_id, text="Shutting down")
+        threading.Thread(target=self.__quit).start()
 
-        message_list = self.delete(args)
+    # Has to be called from another thread
+    def __quit(self):
+        self._updater.stop()
+        self._updater.is_idle = False
 
-        for message in message_list:
-            self._send_message_buffer(bot, update.message.chat_id, text=message, final=False,
-                                      parse_mode=telegram.ParseMode.MARKDOWN)
-        self._send_message_buffer(bot, update.message.chat_id, text="", final=True,
-                                  parse_mode=telegram.ParseMode.MARKDOWN)
+    # /reload
+    @Decorators.restricted
+    def __reload_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+
+        output = self._config.load_config(None)
+
+        answer = ""
+        if output:
+            answer = "*Error: " + output + "*"
+        else:
+            answer = "Config reloaded"
+
+        bot.send_message(chat_id=update.message.chat_id, text=answer, parse_mode=telegram.ParseMode.MARKDOWN)
+
+    # "/whoami"
+    def __whoami_handler(self, bot: telegram.Bot, update: telegram.Update, args):
+
+        user: telegram.User = update.message.from_user
+        message = "You are @{} ({})".format(user.username, user.id)
+        bot.send_message(chat_id=update.message.chat_id, text=message)
 
     def delete(self, arguments: list) -> list:
         """
