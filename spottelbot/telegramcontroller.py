@@ -384,7 +384,7 @@ class TelegramController(object):
                 self.__send_message_buffer(bot, update.message.chat_id, text="", final=True,
                                            parse_mode=telegram.ParseMode.MARKDOWN)
             else:
-                self.__send_message_buffer(bot, update.message.chat_id, text="Not bookmarks found", final=True,
+                self.__send_message_buffer(bot, update.message.chat_id, text="No bookmarks found", final=True,
                                            parse_mode=telegram.ParseMode.MARKDOWN)
 
     # /mark, /set..
