@@ -74,12 +74,14 @@ class SpotifyController(object):
 
         date_string = ""
 
-        today = datetime.datetime.now(local_tz)
+        today = datetime.date.today()
+        date_played_at = date_time.date()
 
-        if today.weekday() == date_time.weekday():
+        if today.weekday() == date_played_at.weekday():
             date_string = "Today"
         else:
-            delta = today - date_time
+
+            delta = today - date_played_at
             if delta.days == 1:
                 date_string = "Yesterday"
             else:
