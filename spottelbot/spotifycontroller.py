@@ -40,7 +40,7 @@ class SpotifyController(object):
         self._oath = None
         self._client = None
 
-    def _format_context_object(self, context_object: dict):
+    def __format_context_object(self, context_object: dict):
         """
 
         :param context_object: The context object
@@ -55,7 +55,7 @@ class SpotifyController(object):
 
         if context_object[type_str] == playlist_str:
             playlist_uri = context_object[uri_str]
-            playlist_dict = self._get_playlist(playlist_uri)
+            playlist_dict = self.__get_playlist(playlist_uri)
             formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])
 
         return formatted_context
@@ -77,22 +77,23 @@ class SpotifyController(object):
         today = datetime.date.today()
         date_played_at = date_time.date()
 
-        if today.weekday() == date_played_at.weekday():
+        delta = today - date_played_at
+
+        if delta.days == 0:
             date_string = "Today"
         else:
-
-            delta = today - date_played_at
+            format_string = ""
             if delta.days == 1:
                 date_string = "Yesterday"
+            elif delta.days <= 6:
+                format_string = "%a"
             else:
-                if delta.days <= 6:
-                    format_string = "%a"
-                else:
-                    format_string = "%x"
-                date_string = datetime.datetime.strftime(date_time, format_string)
+                format_string = "%x"
+            date_string = datetime.datetime.strftime(date_time, format_string)
+            
         return date_string + " " + datetime.datetime.strftime(date_time, "%X")
 
-    def _format_track_object(self, track_object: dict):
+    def __format_track_object(self, track_object: dict):
         """
 
         :param track_object: The track object
@@ -122,7 +123,7 @@ class SpotifyController(object):
     # by the bookmark functions (usually more than once), it can be cached so we don't get any spotify rate limit.
     # The drawback: If the user changes the playlist's name, the old name would be displayed. So it's a trade off
     @functools.lru_cache(maxsize=last_limit)
-    def _get_playlist(self, uri: str):
+    def __get_playlist(self, uri: str):
         """
 
         :param uri: The URI of the playlist ("spotfiy:...")
@@ -148,7 +149,7 @@ class SpotifyController(object):
 
         playlist_name = "<unknown>"
 
-        playlist_object = self._get_playlist(uri)
+        playlist_object = self.__get_playlist(uri)
 
         if playlist_object:
             playlist_name = playlist_object[name_str]
@@ -171,7 +172,7 @@ class SpotifyController(object):
         track_object = self._client.track(uri)
 
         if track_object:
-            formatted_track = self._format_track_object(track_object)
+            formatted_track = self.__format_track_object(track_object)
 
         return formatted_track
 
@@ -212,9 +213,9 @@ class SpotifyController(object):
             the_context = currently_playing_object.get(context_str)
             if the_item:
                 if formatted:
-                    formatted_output = self._format_track_object(the_item)
+                    formatted_output = self.__format_track_object(the_item)
                     if the_context:
-                        formatted_output += self._format_context_object(the_context)
+                        formatted_output += self.__format_context_object(the_context)
                     ret_object = formatted_output
                 else:
                     context_id = None
@@ -226,7 +227,7 @@ class SpotifyController(object):
 
         return ret_object
 
-    def _get_last_play_history_objects(self, lower: int, upper: int):
+    def __get_last_play_history_objects(self, lower: int, upper: int):
         """
 
         :param lower: the lower index (range 0..last_limit-1
@@ -254,12 +255,12 @@ class SpotifyController(object):
         """
 
         formatted_tracks_list = []
-        pho_list = self._get_last_play_history_objects(lower - 1, upper - 1)
+        pho_list = self.__get_last_play_history_objects(lower - 1, upper - 1)
 
         for play_history_object in pho_list:
             played_at_string = self._format_played_at(play_history_object[played_at_str])
             formatted_tracks_list.append(
-                self._format_track_object(play_history_object[track_str]) + self._format_context_object(
+                self.__format_track_object(play_history_object[track_str]) + self.__format_context_object(
                     play_history_object[context_str]) + " - " + played_at_string)
 
         return formatted_tracks_list
@@ -279,7 +280,7 @@ class SpotifyController(object):
         if index < 1 or index > last_limit:
             raise botexceptions.InvalidRange(index)
 
-        play_history = self._get_last_play_history_objects(index - 1, index - 1)
+        play_history = self.__get_last_play_history_objects(index - 1, index - 1)
 
         track_id = None
         playlist_id = None

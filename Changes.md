@@ -1,5 +1,11 @@
 # Changes #
 
+## 2018-07-09
+### 0.2.1
+
+- Bugfix: Time/date are now correclty shown in /last
+- Mild refactoring (internal methods are now mostly __)
+
 ## 2018-07-08
 ### 0.2.0
 
