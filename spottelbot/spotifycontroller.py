@@ -82,14 +82,15 @@ class SpotifyController(object):
         if delta.days == 0:
             date_string = "Today"
         else:
-            format_string = ""
             if delta.days == 1:
                 date_string = "Yesterday"
-            elif delta.days <= 6:
-                format_string = "%a"
             else:
-                format_string = "%x"
-            date_string = datetime.datetime.strftime(date_time, format_string)
+                format_string = ""
+                if delta.days <= 6:
+                    format_string = "%a"
+                else:
+                    format_string = "%x"
+                date_string = datetime.datetime.strftime(date_time, format_string)
             
         return date_string + " " + datetime.datetime.strftime(date_time, "%X")
 

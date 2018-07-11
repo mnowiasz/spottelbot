@@ -1,9 +1,15 @@
 # Changes #
 
+## 2018-07-11
+### 0.2.2
+
+- Bugfix: Another time/date error, regression introduced in 0.2.1
+- Added a default handler for unknown commands
+
 ## 2018-07-09
 ### 0.2.1
 
-- Bugfix: Time/date are now correclty shown in /last
+- Bugfix: Time/date are now correctly shown in /last
 - Mild refactoring (internal methods are now mostly __)
 
 ## 2018-07-08
