@@ -190,14 +190,9 @@ class TelegramController(object):
         for handler in self._handlers:
             command_s = handler[0]
             method_handler = handler[1]
-            if isinstance(command_s, collections.Iterable) and not isinstance(command_s, str):
-                for command in command_s:
-                    self._updater.dispatcher.add_handler(
-                        telegram.ext.CommandHandler(command, method_handler, pass_args=True))
-            else:
-                self._updater.dispatcher.add_handler(
-                    telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
+            self._updater.dispatcher.add_handler(telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
 
+        # Last handler - a catch all handler for unknown commands
         self._updater.dispatcher.add_handler(
             telegram.ext.MessageHandler(telegram.ext.Filters.command, self.__unknown_handler))
         self._updater.start_polling()
