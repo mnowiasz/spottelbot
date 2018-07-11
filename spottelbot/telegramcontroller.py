@@ -156,7 +156,7 @@ class TelegramController(object):
                 "Returns the username and it's numeric ID to the caller",
                 "Useful when you get an 'Access denied' and have a look at he access rules")),
             ("help", self.__help_handler, "This command", ("*/help:* Show all available commands",
-                                                          "*/help <command>*: Gives detailed help for the commad in question")),
+                                                           "*/help <command>*: Gives detailed help for the commad in question")),
             ("current", self.__current_handler, "Get the currently playing track", (
                 "Shows the currenty playing track, if any.",
                 "*Note:* There has to a tracking playing for this to work!",
@@ -198,6 +198,8 @@ class TelegramController(object):
                 self._updater.dispatcher.add_handler(
                     telegram.ext.CommandHandler(command_s, method_handler, pass_args=True))
 
+        self._updater.dispatcher.add_handler(
+            telegram.ext.MessageHandler(telegram.ext.Filters.command, self.__unknown_handler))
         self._updater.start_polling()
 
     def unauthorized(self, bot: telegram.Bot, update: telegram.Update, args):
@@ -494,6 +496,10 @@ class TelegramController(object):
         user: telegram.User = update.message.from_user
         message = "You are @{} ({})".format(user.username, user.id)
         bot.send_message(chat_id=update.message.chat_id, text=message)
+
+    # Handler for unknown coomands
+    def __unknown_handler(self, bot: telegram.Bot, update: telegram.Update):
+        bot.send_message(chat_id=update.message.chat_id, text="I dont' understand the command")
 
     def delete(self, arguments: list) -> list:
         """
