@@ -51,12 +51,13 @@ class SpotifyController(object):
         Formats the context object. A context object describes the context the track was played from (playlist, album..)
         Currently only the playlist is supported, the album is usually already part of the track object
         """
-        formatted_context = None
+        formatted_context = ""
 
-        if context_object[type_str] == playlist_str:
-            playlist_uri = context_object[uri_str]
-            playlist_dict = self.__get_playlist(playlist_uri)
-            formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])
+        if context_object:
+            if context_object[type_str] == playlist_str:
+                playlist_uri = context_object[uri_str]
+                playlist_dict = self.__get_playlist(playlist_uri)
+                formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])
 
         return formatted_context
 

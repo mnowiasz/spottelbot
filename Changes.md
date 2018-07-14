@@ -1,5 +1,11 @@
 # Changes #
 
+## 2018-07-14
+### 0.2.3
+
+- Bugfix: Provide for a rare condition (indicating a problem at spotify's server)
+where the track's context (playlist or album) is empty causing an exception
+ 
 ## 2018-07-11
 ### 0.2.2
 
