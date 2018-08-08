@@ -27,6 +27,7 @@ items_str = "items"
 context_str = "context"
 name_str = "name"
 playlist_str = "playlist"
+playlist_v2_str = "playlist_v2"
 track_str = "track"
 type_str = "type"
 uri_str = "uri"
@@ -54,7 +55,7 @@ class SpotifyController(object):
         formatted_context = ""
 
         if context_object:
-            if context_object[type_str] == playlist_str:
+            if context_object[type_str] in (playlist_str, playlist_v2_str):
                 playlist_uri = context_object[uri_str]
                 playlist_dict = self.__get_playlist(playlist_uri)
                 formatted_context = " (Playlist: {}) ".format(playlist_dict[name_str])

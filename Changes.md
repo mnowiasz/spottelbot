@@ -1,5 +1,9 @@
 # Changes #
 
+## 2018-08-09
+### 0.2.4
+
+- Bugfix: /last now shows playlists again
 ## 2018-07-14
 ### 0.2.3
 
